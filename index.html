@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f172a">
+<title>Pokémon Champions S調整</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#fff; --ink:#172033; --muted:#6b7280;
+    --line:#e5e7eb; --accent:#4f46e5; --accent2:#eef2ff;
+    --good:#087f5b; --warn:#b45309; --bad:#b42318; --shadow:0 8px 24px rgba(15,23,42,.08);
+  }
+  *{box-sizing:border-box}
+  html{background:var(--bg)}
+  body{
+    margin:0; color:var(--ink); background:var(--bg);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic UI","Yu Gothic",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  button,input,select{font:inherit}
+  button{touch-action:manipulation}
+  .app{max-width:620px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 14px) 12px calc(env(safe-area-inset-bottom) + 32px)}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:5px 3px 12px}
+  .title{font-size:20px;font-weight:800;letter-spacing:-.02em}
+  .badge{font-size:11px;background:#111827;color:white;padding:5px 8px;border-radius:999px}
+  .card{background:var(--card);border-radius:20px;box-shadow:var(--shadow);padding:16px;margin-bottom:12px}
+  .card h2{font-size:14px;margin:0 0 12px;color:#374151}
+  .searchWrap{position:relative}
+  #pokeSearch{
+    width:100%;border:1px solid var(--line);background:#f9fafb;border-radius:14px;
+    padding:13px 14px;font-size:16px;outline:none;
+  }
+  #pokeSearch:focus{border-color:#818cf8;box-shadow:0 0 0 3px #e0e7ff}
+  .results{
+    display:none;position:absolute;z-index:20;left:0;right:0;top:50px;
+    max-height:310px;overflow:auto;background:white;border:1px solid var(--line);
+    border-radius:14px;box-shadow:0 14px 32px rgba(15,23,42,.16)
+  }
+  .result{padding:11px 13px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;gap:8px;cursor:pointer}
+  .result:last-child{border-bottom:0}
+  .result small{color:var(--muted);white-space:nowrap}
+  .monHead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:14px}
+  #monName{font-size:25px;font-weight:850;letter-spacing:-.03em}
+  .sub{font-size:12px;color:var(--muted);margin-top:3px}
+  .baseS{text-align:right;white-space:nowrap}
+  .baseS b{font-size:22px}
+  .seg{display:grid;grid-template-columns:repeat(3,1fr);background:#f3f4f6;border-radius:13px;padding:3px;gap:3px}
+  .seg button{border:0;background:transparent;border-radius:10px;padding:9px 5px;color:#4b5563;font-weight:700}
+  .seg button.active{background:white;color:var(--accent);box-shadow:0 1px 6px rgba(15,23,42,.12)}
+  .spTop{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:5px}
+  .spValue{font-size:28px;font-weight:850}
+  .spValue small{font-size:13px;color:var(--muted);font-weight:600}
+  input[type=range]{width:100%;accent-color:var(--accent);height:32px}
+  .stepper{display:grid;grid-template-columns:48px 1fr 48px;gap:9px;margin-top:3px}
+  .stepper button{border:1px solid var(--line);background:white;border-radius:12px;font-size:22px;height:43px;font-weight:700}
+  .quick{display:flex;gap:7px;overflow:auto;margin-top:10px;padding-bottom:2px}
+  .quick button,.chip{
+    border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 11px;font-size:12px;font-weight:700;white-space:nowrap
+  }
+  .statbox{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+  .stat{background:#f8fafc;border-radius:15px;padding:12px}
+  .stat span{font-size:11px;color:var(--muted)}
+  .stat b{display:block;font-size:30px;margin-top:2px}
+  .stat.primary{background:var(--accent2)}
+  .stat.primary b{color:var(--accent)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  label.small{display:block;font-size:11px;color:var(--muted);margin:0 0 5px 3px}
+  select{
+    width:100%;border:1px solid var(--line);background:#fafafa;border-radius:12px;
+    padding:11px 10px;color:var(--ink)
+  }
+  .toggles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .toggle{
+    display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid var(--line);
+    border-radius:12px;padding:10px 11px;font-size:13px;font-weight:650
+  }
+  .toggle input{width:19px;height:19px;accent-color:var(--accent)}
+  .hint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:9px}
+  .lineHeader{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
+  .filters{display:flex;gap:6px;overflow:auto;padding-bottom:4px;margin-bottom:7px}
+  .chip.active{background:var(--accent);border-color:var(--accent);color:white}
+  .speedList{border-top:1px solid var(--line)}
+  .speedRow{display:grid;grid-template-columns:52px 1fr;gap:7px;padding:9px 0;border-bottom:1px solid #f1f5f9}
+  .speedNum{font-size:18px;font-weight:850;text-align:right;padding-top:4px}
+  .speedNum.me{color:var(--accent)}
+  .targets{display:flex;flex-wrap:wrap;gap:5px}
+  .target{
+    border:0;background:#f3f4f6;border-radius:9px;padding:6px 8px;text-align:left;
+    font-size:11px;line-height:1.25;color:#374151
+  }
+  .target.good{background:#ecfdf3;color:#087f5b}
+  .target.tie{background:#fff7ed;color:#b45309}
+  .meRow{background:linear-gradient(90deg,#eef2ff00,#eef2ff,#eef2ff00)}
+  .meLabel{font-size:12px;color:var(--accent);font-weight:800;padding-top:6px}
+  .empty{padding:22px;text-align:center;color:var(--muted);font-size:13px}
+  .sheetBack{display:none;position:fixed;z-index:50;inset:0;background:rgba(15,23,42,.38)}
+  .sheet{
+    position:absolute;left:0;right:0;bottom:0;background:white;border-radius:22px 22px 0 0;
+    padding:18px 16px calc(env(safe-area-inset-bottom) + 18px);max-width:620px;margin:auto
+  }
+  .handle{width:40px;height:5px;background:#d1d5db;border-radius:5px;margin:0 auto 12px}
+  .sheet h3{margin:0 0 5px;font-size:20px}
+  .sheet .big{font-size:31px;font-weight:850;margin:12px 0}
+  .sheetAction{
+    width:100%;border:0;background:var(--accent);color:white;border-radius:14px;padding:13px;font-weight:800;margin-top:8px
+  }
+  .sheetClose{width:100%;border:0;background:#f3f4f6;border-radius:14px;padding:12px;font-weight:700;margin-top:7px}
+  details{font-size:12px;color:var(--muted)}
+  summary{cursor:pointer;font-weight:700;color:#4b5563}
+  .foot{font-size:10px;color:#94a3b8;line-height:1.55;padding:2px 5px 10px;text-align:center}
+  @media (max-width:370px){.stat b{font-size:26px}.grid2{grid-template-columns:1fr}.toggles{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<noscript>
+  <div style="max-width:620px;margin:18px auto;padding:14px 16px;border-radius:14px;background:#fff7ed;color:#9a3412;font-family:-apple-system,BlinkMacSystemFont,sans-serif;line-height:1.55">
+    <b>このプレビューでは操作機能が動作していません。</b><br>
+    このツールはJavaScriptで計算・一覧更新を行います。Webページとして公開したURLをSafariで開くと操作できます。
+  </div>
+</noscript>
+
+<div class="app">
+  <div class="top">
+    <div class="title">Pokémon Champions S調整</div>
+    <div class="badge">prototype v0.2</div>
+  </div>
+
+  <section class="card">
+    <h2>ポケモン</h2>
+    <div class="searchWrap">
+      <input id="pokeSearch" type="search" placeholder="ポケモン名で検索" autocomplete="off">
+      <div class="results" id="results"></div>
+    </div>
+    <div class="monHead">
+      <div>
+        <div id="monName">ガブリアス</div>
+        <div class="sub" id="monMeta">#0445 / Garchomp</div>
+      </div>
+      <div class="baseS"><span class="sub">S種族値</span><br><b id="baseSpeed">102</b></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>素早さ調整</h2>
+
+    <label class="small">能力補正（性格）</label>
+    <div class="seg" id="natureSeg">
+      <button data-nature="0.9">下降 ↓</button>
+      <button data-nature="1" >無補正</button>
+      <button data-nature="1.1" class="active">上昇 ↑</button>
+    </div>
+
+    <div style="height:16px"></div>
+    <div class="spTop">
+      <div>
+        <div class="sub">S 能力ポイント</div>
+        <div class="spValue"><span id="spNum">32</span><small> / 32</small></div>
+      </div>
+      <div class="sub">1ポイント刻み</div>
+    </div>
+    <input id="spRange" type="range" min="0" max="32" step="1" value="32">
+    <div class="stepper">
+      <button id="minus">−</button>
+      <div></div>
+      <button id="plus">＋</button>
+    </div>
+    <div class="quick">
+      <button data-sp="0">0振り</button>
+      <button data-sp="1">1</button>
+      <button data-sp="16">16</button>
+      <button data-sp="24">24</button>
+      <button data-sp="32">32振り</button>
+    </div>
+
+    <div class="statbox">
+      <div class="stat">
+        <span>ステータス画面のS</span>
+        <b id="rawSpeed">169</b>
+      </div>
+      <div class="stat primary">
+        <span>バトル中の実効S</span>
+        <b id="effSpeed">169</b>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>バトル中の補正</h2>
+    <div class="grid2">
+      <div>
+        <label class="small">能力ランク</label>
+        <select id="rank"><option value="6">+6</option>
+<option value="5">+5</option>
+<option value="4">+4</option>
+<option value="3">+3</option>
+<option value="2">+2</option>
+<option value="1">+1</option>
+<option value="0" selected>±0</option>
+<option value="-1">-1</option>
+<option value="-2">-2</option>
+<option value="-3">-3</option>
+<option value="-4">-4</option>
+<option value="-5">-5</option>
+<option value="-6">-6</option></select>
+      </div>
+      <div>
+        <label class="small">持ち物</label>
+        <select id="item">
+          <option value="1">なし</option>
+          <option value="1.5">こだわりスカーフ ×1.5</option>
+          <option value="0.5">くろいてっきゅう ×0.5</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="height:9px"></div>
+    <label class="small">特性による素早さ補正</label>
+    <select id="abilityMod">
+      <option value="none">なし</option>
+      <option value="swift">すいすい（雨）×2</option>
+      <option value="chlorophyll">ようりょくそ（晴れ）×2</option>
+      <option value="sandrush">すなかき（砂）×2</option>
+      <option value="slushrush">ゆきかき（雪）×2</option>
+      <option value="surgesurfer">サーフテール（エレキフィールド）×2</option>
+      <option value="unburden">かるわざ（持ち物消費後）×2</option>
+      <option value="quickfeet">はやあし（状態異常）×1.5</option>
+    </select>
+    <div class="hint" id="abilityHint"></div>
+
+    <div class="toggles">
+      <label class="toggle"><input type="checkbox" id="tailwind">おいかぜ ×2</label>
+      <label class="toggle"><input type="checkbox" id="paralysis">まひ ×0.5</label>
+      <label class="toggle"><input type="checkbox" id="swamp">しつげん ×0.25</label>
+      <label class="toggle"><input type="checkbox" id="trickroom">トリックルーム</label>
+    </div>
+    <div class="hint">「かそく」「くだけるよろい」「モータードライブ」「がんせきふうじ」など、Sランクが変わる効果は上の能力ランクでまとめて再現できます。トリックルームは速度そのものではなく行動順判定を反転します。</div>
+  </section>
+
+  <section class="card">
+    <div class="lineHeader">
+      <h2 style="margin:0">どこまで抜ける？</h2>
+      <span class="sub" id="lineCount"></span>
+    </div>
+    <div class="filters" id="lineFilters">
+      <button class="chip active" data-line="fast">最速</button>
+      <button class="chip active" data-line="neutral">準速</button>
+      <button class="chip active" data-line="zero">無振り</button>
+      <button class="chip" data-line="slow">最遅</button>
+      <button class="chip" data-line="plus1">+1最速</button>
+      <button class="chip" data-line="scarf">スカーフ最速</button>
+      <button class="chip" data-line="double">2倍最速</button>
+    </div>
+    <div class="hint">自分の現在地の前後を表示。相手をタップすると「何ポイントまで振れば抜けるか」を逆算します。同速は「抜いた」扱いにしません。</div>
+    <div id="speedList" class="speedList"><div class="empty">JavaScriptが動作すると、ここに素早さ一覧が表示されます。</div></div>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>計算・データについて</summary>
+      <p>Lv.50固定。チャンピオンズの能力ポイントは0〜32。S実数値は「S種族値 + 20 + 能力ポイント」を基準に能力補正を掛け、小数点以下を切り捨てます。</p>
+      <p>現在のポケモン種族値・特性データを内蔵し、やっくんの表そのものをコピーせず、同種の素早さラインをアプリ内で自動生成しています。純粋に見た目だけが違い、Sと特性が同じフォルムは検索欄でまとめています。</p>
+      <p>このv0.2では「実効S」に直接関係する主要補正を実装しています。優先度・せんせいのツメ等の確率行動順・特性による強制後攻などは、生の素早さ比較とは別ロジックになるため次版で切り分けます。</p>
+    </details>
+  </section>
+
+  <div class="foot">非公式・個人用プロトタイプ。ポケモン画像は使用していません。</div>
+</div>
+
+<div class="sheetBack" id="sheetBack">
+  <div class="sheet">
+    <div class="handle"></div>
+    <h3 id="sheetTitle"></h3>
+    <div class="sub" id="sheetSub"></div>
+    <div class="big" id="sheetBig"></div>
+    <div id="sheetExplain" style="font-size:13px;line-height:1.65"></div>
+    <button class="sheetAction" id="sheetSet" style="display:none"></button>
+    <button class="sheetClose" id="sheetClose">閉じる</button>
+  </div>
+</div>
+
+<script>
+const MONS = [{"dex":3,"en":"Venusaur","speed":80,"abilities":["Overgrow","Overgrow","Chlorophyll"]},{"dex":3,"en":"Venusaur-Mega","speed":80,"abilities":["Thick Fat","Thick Fat","Thick Fat"]},{"dex":6,"en":"Charizard","speed":100,"abilities":["Blaze","Blaze","Solar Power"]},{"dex":6,"en":"Charizard-Mega X","speed":100,"abilities":["Tough Claws","Tough Claws","Tough Claws"]},{"dex":6,"en":"Charizard-Mega Y","speed":100,"abilities":["Drought","Drought","Drought"]},{"dex":9,"en":"Blastoise","speed":78,"abilities":["Torrent","Torrent","Rain Dish"]},{"dex":9,"en":"Blastoise-Mega","speed":78,"abilities":["Mega Launcher","Mega Launcher","Mega Launcher"]},{"dex":15,"en":"Beedrill","speed":75,"abilities":["Swarm","Swarm","Sniper"]},{"dex":15,"en":"Beedrill-Mega","speed":145,"abilities":["Adaptability","Adaptability","Adaptability"]},{"dex":18,"en":"Pidgeot","speed":101,"abilities":["Keen Eye","Tangled Feet","Big Pecks"]},{"dex":18,"en":"Pidgeot-Mega","speed":121,"abilities":["No Guard","No Guard","No Guard"]},{"dex":24,"en":"Arbok","speed":80,"abilities":["Intimidate","Shed Skin","Unnerve"]},{"dex":25,"en":"Pikachu","speed":90,"abilities":["Static","Static","Lightning Rod"]},{"dex":26,"en":"Raichu","speed":110,"abilities":["Static","Static","Lightning Rod"]},{"dex":26,"en":"Raichu-Alola","speed":110,"abilities":["Surge Surfer","Surge Surfer","Surge Surfer"]},{"dex":26,"en":"Raichu-Mega X","speed":110,"abilities":["Electric Surge","Electric Surge","Electric Surge"]},{"dex":26,"en":"Raichu-Mega Y","speed":130,"abilities":["No Guard","No Guard","No Guard"]},{"dex":36,"en":"Clefable","speed":60,"abilities":["Cute Charm","Magic Guard","Unaware"]},{"dex":36,"en":"Clefable-Mega","speed":70,"abilities":["Magic Bounce","Magic Bounce","Magic Bounce"]},{"dex":38,"en":"Ninetales","speed":100,"abilities":["Flash Fire","Flash Fire","Drought"]},{"dex":38,"en":"Ninetales-Alola","speed":109,"abilities":["Snow Cloak","Snow Cloak","Snow Warning"]},{"dex":45,"en":"Vileplume","speed":50,"abilities":["Chlorophyll","Chlorophyll","Effect Spore"]},{"dex":59,"en":"Arcanine","speed":95,"abilities":["Intimidate","Flash Fire","Justified"]},{"dex":59,"en":"Arcanine-Hisui","speed":90,"abilities":["Intimidate","Flash Fire","Rock Head"]},{"dex":65,"en":"Alakazam","speed":120,"abilities":["Synchronize","Inner Focus","Magic Guard"]},{"dex":65,"en":"Alakazam-Mega","speed":150,"abilities":["Trace","Trace","Trace"]},{"dex":68,"en":"Machamp","speed":55,"abilities":["Guts","No Guard","Steadfast"]},{"dex":71,"en":"Victreebel","speed":70,"abilities":["Chlorophyll","Chlorophyll","Gluttony"]},{"dex":71,"en":"Victreebel-Mega","speed":70,"abilities":["Innards Out","Innards Out","Innards Out"]},{"dex":80,"en":"Slowbro","speed":30,"abilities":["Oblivious","Own Tempo","Regenerator"]},{"dex":80,"en":"Slowbro-Mega","speed":30,"abilities":["Shell Armor","Shell Armor","Shell Armor"]},{"dex":80,"en":"Slowbro-Galar","speed":30,"abilities":["Quick Draw","Own Tempo","Regenerator"]},{"dex":94,"en":"Gengar","speed":110,"abilities":["Cursed Body","Cursed Body","Cursed Body"]},{"dex":94,"en":"Gengar-Mega","speed":130,"abilities":["Shadow Tag","Shadow Tag","Shadow Tag"]},{"dex":115,"en":"Kangaskhan","speed":90,"abilities":[""]},{"dex":115,"en":"Kangaskhan-Mega","speed":100,"abilities":[""]},{"dex":121,"en":"Starmie","speed":115,"abilities":["Illuminate","Natural Cure","Analytic"]},{"dex":121,"en":"Starmie-Mega","speed":120,"abilities":["Huge Power","Huge Power","Huge Power"]},{"dex":127,"en":"Pinsir","speed":85,"abilities":["Hyper Cutter","Mold Breaker","Moxie"]},{"dex":127,"en":"Pinsir-Mega","speed":105,"abilities":["Aerilate","Aerilate","Aerilate"]},{"dex":128,"en":"Tauros","speed":110,"abilities":[""]},{"dex":128,"en":"Tauros-Paldea Combat","speed":100,"abilities":["Intimidate","Anger Point","Cud Chew"]},{"dex":130,"en":"Gyarados","speed":81,"abilities":["Intimidate","Intimidate","Moxie"]},{"dex":130,"en":"Gyarados-Mega","speed":81,"abilities":["Mold Breaker","Mold Breaker","Mold Breaker"]},{"dex":132,"en":"Ditto","speed":48,"abilities":[""]},{"dex":134,"en":"Vaporeon","speed":65,"abilities":["Water Absorb","Water Absorb","Hydration"]},{"dex":135,"en":"Jolteon","speed":130,"abilities":["Volt Absorb","Volt Absorb","Quick Feet"]},{"dex":136,"en":"Flareon","speed":65,"abilities":["Flash Fire","Flash Fire","Guts"]},{"dex":142,"en":"Aerodactyl","speed":130,"abilities":["Rock Head","Pressure","Unnerve"]},{"dex":142,"en":"Aerodactyl-Mega","speed":150,"abilities":["Tough Claws","Tough Claws","Tough Claws"]},{"dex":143,"en":"Snorlax","speed":30,"abilities":[""]},{"dex":149,"en":"Dragonite","speed":80,"abilities":["Inner Focus","Inner Focus","Multiscale"]},{"dex":149,"en":"Dragonite-Mega","speed":100,"abilities":["Multiscale","Multiscale","Multiscale"]},{"dex":154,"en":"Meganium","speed":80,"abilities":["Overgrow","Overgrow","Leaf Guard"]},{"dex":154,"en":"Meganium-Mega","speed":80,"abilities":["315","315","315"]},{"dex":157,"en":"Typhlosion","speed":100,"abilities":["Blaze","Blaze","Flash Fire"]},{"dex":157,"en":"Typhlosion-Hisui","speed":95,"abilities":["Blaze","Blaze","Frisk"]},{"dex":160,"en":"Feraligatr","speed":78,"abilities":["Torrent","Torrent","Sheer Force"]},{"dex":160,"en":"Feraligatr-Mega","speed":78,"abilities":["312","312","312"]},{"dex":168,"en":"Ariados","speed":40,"abilities":["Swarm","Insomnia","Sniper"]},{"dex":181,"en":"Ampharos","speed":55,"abilities":["Static","Static","Plus"]},{"dex":181,"en":"Ampharos-Mega","speed":45,"abilities":["Mold Breaker","Mold Breaker","Mold Breaker"]},{"dex":184,"en":"Azumarill","speed":50,"abilities":["Thick Fat","Huge Power","Sap Sipper"]},{"dex":186,"en":"Politoed","speed":70,"abilities":["Water Absorb","Damp","Drizzle"]},{"dex":196,"en":"Espeon","speed":110,"abilities":["Synchronize","Synchronize","Magic Bounce"]},{"dex":197,"en":"Umbreon","speed":65,"abilities":["Synchronize","Synchronize","Inner Focus"]},{"dex":199,"en":"Slowking","speed":30,"abilities":["Oblivious","Own Tempo","Regenerator"]},{"dex":199,"en":"Slowking-Galar","speed":30,"abilities":["Curious Medicine","Own Tempo","Regenerator"]},{"dex":205,"en":"Forretress","speed":40,"abilities":["Sturdy","Sturdy","Overcoat"]},{"dex":208,"en":"Steelix","speed":30,"abilities":["Rock Head","Sturdy","Sheer Force"]},{"dex":208,"en":"Steelix-Mega","speed":30,"abilities":["Sand Force","Sand Force","Sand Force"]},{"dex":211,"en":"Qwilfish","speed":85,"abilities":["Poison Point","Swift Swim","Intimidate"]},{"dex":212,"en":"Scizor","speed":65,"abilities":["Swarm","Technician","Light Metal"]},{"dex":212,"en":"Scizor-Mega","speed":75,"abilities":["Technician","Technician","Technician"]},{"dex":214,"en":"Heracross","speed":85,"abilities":["Swarm","Guts","Moxie"]},{"dex":214,"en":"Heracross-Mega","speed":75,"abilities":["Skill Link","Skill Link","Skill Link"]},{"dex":227,"en":"Skarmory","speed":70,"abilities":["Keen Eye","Sturdy","Weak Armor"]},{"dex":227,"en":"Skarmory-Mega","speed":110,"abilities":["Stalwart","Stalwart","Stalwart"]},{"dex":229,"en":"Houndoom","speed":95,"abilities":["Early Bird","Flash Fire","Unnerve"]},{"dex":229,"en":"Houndoom-Mega","speed":115,"abilities":["Solar Power","Solar Power","Solar Power"]},{"dex":248,"en":"Tyranitar","speed":61,"abilities":["Sand Stream","Sand Stream","Unnerve"]},{"dex":248,"en":"Tyranitar-Mega","speed":71,"abilities":["Sand Stream","Sand Stream","Sand Stream"]},{"dex":254,"en":"Sceptile","speed":120,"abilities":["Overgrow","Overgrow","Unburden"]},{"dex":254,"en":"Sceptile-Mega","speed":145,"abilities":["Lightning Rod","Lightning Rod","Lightning Rod"]},{"dex":257,"en":"Blaziken","speed":80,"abilities":["Blaze","Blaze","Speed Boost"]},{"dex":257,"en":"Blaziken-Mega","speed":100,"abilities":["Speed Boost","Speed Boost","Speed Boost"]},{"dex":260,"en":"Swampert","speed":60,"abilities":["Torrent","Torrent","Damp"]},{"dex":260,"en":"Swampert-Mega","speed":70,"abilities":["Swift Swim","Swift Swim","Swift Swim"]},{"dex":279,"en":"Pelipper","speed":65,"abilities":["Keen Eye","Drizzle","Rain Dish"]},{"dex":282,"en":"Gardevoir","speed":80,"abilities":["Synchronize","Trace","Telepathy"]},{"dex":282,"en":"Gardevoir-Mega","speed":100,"abilities":["Pixilate","Pixilate","Pixilate"]},{"dex":302,"en":"Sableye","speed":50,"abilities":["Keen Eye","Stall","Prankster"]},{"dex":302,"en":"Sableye-Mega","speed":20,"abilities":["Magic Bounce","Magic Bounce","Magic Bounce"]},{"dex":303,"en":"Mawile","speed":50,"abilities":["Hyper Cutter","Intimidate","Sheer Force"]},{"dex":303,"en":"Mawile-Mega","speed":50,"abilities":["Huge Power","Huge Power","Huge Power"]},{"dex":306,"en":"Aggron","speed":50,"abilities":["Sturdy","Rock Head","Heavy Metal"]},{"dex":306,"en":"Aggron-Mega","speed":50,"abilities":["Filter","Filter","Filter"]},{"dex":308,"en":"Medicham","speed":80,"abilities":["Pure Power","Pure Power","Telepathy"]},{"dex":308,"en":"Medicham-Mega","speed":100,"abilities":["Pure Power","Pure Power","Pure Power"]},{"dex":310,"en":"Manectric","speed":105,"abilities":["Static","Lightning Rod","Minus"]},{"dex":310,"en":"Manectric-Mega","speed":135,"abilities":["Intimidate","Intimidate","Intimidate"]},{"dex":319,"en":"Sharpedo","speed":95,"abilities":["Rough Skin","Rough Skin","Speed Boost"]},{"dex":319,"en":"Sharpedo-Mega","speed":105,"abilities":["Strong Jaw","Strong Jaw","Strong Jaw"]},{"dex":323,"en":"Camerupt","speed":40,"abilities":["Magma Armor","Solid Rock","Anger Point"]},{"dex":323,"en":"Camerupt-Mega","speed":20,"abilities":["Sheer Force","Sheer Force","Sheer Force"]},{"dex":324,"en":"Torkoal","speed":20,"abilities":["White Smoke","Drought","Shell Armor"]},{"dex":334,"en":"Altaria","speed":80,"abilities":["Natural Cure","Natural Cure","Cloud Nine"]},{"dex":334,"en":"Altaria-Mega","speed":80,"abilities":["Pixilate","Pixilate","Pixilate"]},{"dex":350,"en":"Milotic","speed":81,"abilities":["Marvel Scale","Competitive","Cute Charm"]},{"dex":351,"en":"Castform","speed":70,"abilities":[""]},{"dex":351,"en":"Castform-Sunny","speed":70,"abilities":["Forecast","Forecast","Forecast"]},{"dex":354,"en":"Banette","speed":65,"abilities":["Insomnia","Frisk","Cursed Body"]},{"dex":354,"en":"Banette-Mega","speed":75,"abilities":["Prankster","Prankster","Prankster"]},{"dex":358,"en":"Chimecho","speed":65,"abilities":["Levitate","Levitate","Levitate"]},{"dex":358,"en":"Chimecho-Mega","speed":65,"abilities":["Levitate","Levitate","Levitate"]},{"dex":359,"en":"Absol","speed":75,"abilities":["Pressure","Super Luck","Justified"]},{"dex":359,"en":"Absol-Mega","speed":115,"abilities":["Magic Bounce","Magic Bounce","Magic Bounce"]},{"dex":362,"en":"Glalie","speed":80,"abilities":["Inner Focus","Ice Body","Moody"]},{"dex":362,"en":"Glalie-Mega","speed":100,"abilities":["Refrigerate","Refrigerate","Refrigerate"]},{"dex":376,"en":"Metagross","speed":70,"abilities":["Clear Body","Clear Body","Light Metal"]},{"dex":376,"en":"Metagross-Mega","speed":110,"abilities":["Tough Claws","Tough Claws","Tough Claws"]},{"dex":389,"en":"Torterra","speed":56,"abilities":["Overgrow","Overgrow","Shell Armor"]},{"dex":392,"en":"Infernape","speed":108,"abilities":["Blaze","Blaze","Iron Fist"]},{"dex":395,"en":"Empoleon","speed":60,"abilities":["Torrent","Torrent","Competitive"]},{"dex":398,"en":"Staraptor","speed":100,"abilities":["Intimidate","Intimidate","Reckless"]},{"dex":398,"en":"Staraptor-Mega","speed":110,"abilities":["Contrary","Contrary","Contrary"]},{"dex":405,"en":"Luxray","speed":70,"abilities":["Rivalry","Intimidate","Guts"]},{"dex":407,"en":"Roserade","speed":90,"abilities":["Natural Cure","Poison Point","Technician"]},{"dex":409,"en":"Rampardos","speed":58,"abilities":["Mold Breaker","Mold Breaker","Sheer Force"]},{"dex":411,"en":"Bastiodon","speed":30,"abilities":["Sturdy","Sturdy","Soundproof"]},{"dex":428,"en":"Lopunny","speed":105,"abilities":[""]},{"dex":428,"en":"Lopunny-Mega","speed":135,"abilities":["Scrappy","Scrappy","Scrappy"]},{"dex":442,"en":"Spiritomb","speed":35,"abilities":["Pressure","Pressure","Infiltrator"]},{"dex":445,"en":"Garchomp","speed":102,"abilities":["Sand Veil","Sand Veil","Rough Skin"]},{"dex":445,"en":"Garchomp-Mega","speed":92,"abilities":["Sand Force","Sand Force","Sand Force"]},{"dex":448,"en":"Lucario","speed":90,"abilities":["Steadfast","Inner Focus","Justified"]},{"dex":448,"en":"Lucario-Mega","speed":112,"abilities":["Adaptability","Adaptability","Adaptability"]},{"dex":450,"en":"Hippowdon","speed":47,"abilities":["Sand Stream","Sand Stream","Sand Force"]},{"dex":454,"en":"Toxicroak","speed":85,"abilities":["Anticipation","Dry Skin","Poison Touch"]},{"dex":460,"en":"Abomasnow","speed":60,"abilities":["Snow Warning","Snow Warning","Soundproof"]},{"dex":460,"en":"Abomasnow-Mega","speed":30,"abilities":["Snow Warning","Snow Warning","Snow Warning"]},{"dex":461,"en":"Weavile","speed":125,"abilities":["Pressure","Pressure","Pickpocket"]},{"dex":464,"en":"Rhyperior","speed":40,"abilities":["Lightning Rod","Solid Rock","Reckless"]},{"dex":470,"en":"Leafeon","speed":95,"abilities":["Leaf Guard","Leaf Guard","Chlorophyll"]},{"dex":471,"en":"Glaceon","speed":65,"abilities":["Snow Cloak","Snow Cloak","Ice Body"]},{"dex":472,"en":"Gliscor","speed":95,"abilities":["Hyper Cutter","Sand Veil","Poison Heal"]},{"dex":473,"en":"Mamoswine","speed":80,"abilities":["Oblivious","Snow Cloak","Thick Fat"]},{"dex":475,"en":"Gallade","speed":80,"abilities":["Steadfast","Sharpness","Justified"]},{"dex":475,"en":"Gallade-Mega","speed":110,"abilities":["Inner Focus","Inner Focus","Inner Focus"]},{"dex":478,"en":"Froslass","speed":110,"abilities":["Snow Cloak","Snow Cloak","Cursed Body"]},{"dex":478,"en":"Froslass-Mega","speed":120,"abilities":["Snow Warning","Snow Warning","Snow Warning"]},{"dex":479,"en":"Rotom","speed":91,"abilities":["Levitate","Levitate","Levitate"]},{"dex":479,"en":"Rotom-Heat","speed":86,"abilities":["Levitate","Levitate","Levitate"]},{"dex":497,"en":"Serperior","speed":113,"abilities":["Overgrow","Overgrow","Contrary"]},{"dex":500,"en":"Emboar","speed":65,"abilities":["Blaze","Blaze","Reckless"]},{"dex":500,"en":"Emboar-Mega","speed":75,"abilities":["Mold Breaker","Mold Breaker","Mold Breaker"]},{"dex":503,"en":"Samurott","speed":70,"abilities":["Torrent","Torrent","Shell Armor"]},{"dex":503,"en":"Samurott-Hisui","speed":85,"abilities":["Torrent","Torrent","Sharpness"]},{"dex":505,"en":"Watchog","speed":77,"abilities":[""]},{"dex":510,"en":"Liepard","speed":106,"abilities":["Limber","Unburden","Prankster"]},{"dex":512,"en":"Simisage","speed":101,"abilities":["Gluttony","Gluttony","Overgrow"]},{"dex":514,"en":"Simisear","speed":101,"abilities":["Gluttony","Gluttony","Blaze"]},{"dex":516,"en":"Simipour","speed":101,"abilities":["Gluttony","Gluttony","Torrent"]},{"dex":518,"en":"Musharna","speed":29,"abilities":["Forewarn","Synchronize","Telepathy"]},{"dex":530,"en":"Excadrill","speed":88,"abilities":["Sand Rush","Sand Force","Mold Breaker"]},{"dex":530,"en":"Excadrill-Mega","speed":103,"abilities":["311","311","311"]},{"dex":531,"en":"Audino","speed":50,"abilities":[""]},{"dex":531,"en":"Audino-Mega","speed":50,"abilities":["Healer","Healer","Healer"]},{"dex":534,"en":"Conkeldurr","speed":45,"abilities":["Guts","Sheer Force","Iron Fist"]},{"dex":545,"en":"Scolipede","speed":112,"abilities":["Poison Point","Swarm","Speed Boost"]},{"dex":545,"en":"Scolipede-Mega","speed":62,"abilities":["Shell Armor","Shell Armor","Shell Armor"]},{"dex":547,"en":"Whimsicott","speed":116,"abilities":["Prankster","Infiltrator","Chlorophyll"]},{"dex":553,"en":"Krookodile","speed":92,"abilities":["Intimidate","Moxie","Anger Point"]},{"dex":560,"en":"Scrafty","speed":58,"abilities":["Shed Skin","Moxie","Intimidate"]},{"dex":560,"en":"Scrafty-Mega","speed":68,"abilities":["Intimidate","Intimidate","Intimidate"]},{"dex":563,"en":"Cofagrigus","speed":30,"abilities":["Mummy","Mummy","Mummy"]},{"dex":569,"en":"Garbodor","speed":75,"abilities":["Stench","Weak Armor","Aftermath"]},{"dex":571,"en":"Zoroark","speed":105,"abilities":["Illusion","Illusion","Illusion"]},{"dex":571,"en":"Zoroark-Hisui","speed":110,"abilities":["Illusion","Illusion","Illusion"]},{"dex":579,"en":"Reuniclus","speed":30,"abilities":["Overcoat","Magic Guard","Regenerator"]},{"dex":584,"en":"Vanilluxe","speed":79,"abilities":["Ice Body","Snow Warning","Weak Armor"]},{"dex":587,"en":"Emolga","speed":103,"abilities":["Static","Static","Motor Drive"]},{"dex":604,"en":"Eelektross","speed":50,"abilities":["Levitate","Levitate","Levitate"]},{"dex":604,"en":"Eelektross-Mega","speed":80,"abilities":["Eelevate","Eelevate","Eelevate"]},{"dex":609,"en":"Chandelure","speed":80,"abilities":["Flash Fire","Flame Body","Infiltrator"]},{"dex":609,"en":"Chandelure-Mega","speed":90,"abilities":["Infiltrator","Infiltrator","Infiltrator"]},{"dex":614,"en":"Beartic","speed":50,"abilities":["Snow Cloak","Slush Rush","Swift Swim"]},{"dex":618,"en":"Stunfisk","speed":32,"abilities":["Static","Limber","Sand Veil"]},{"dex":618,"en":"Stunfisk-Galar","speed":32,"abilities":["Mimicry","Mimicry","Mimicry"]},{"dex":623,"en":"Golurk","speed":55,"abilities":["Iron Fist","Klutz","No Guard"]},{"dex":623,"en":"Golurk-Mega","speed":55,"abilities":["Unseen Fist","Unseen Fist","Unseen Fist"]},{"dex":635,"en":"Hydreigon","speed":98,"abilities":["Levitate","Levitate","Levitate"]},{"dex":637,"en":"Volcarona","speed":100,"abilities":["Flame Body","Flame Body","Swarm"]},{"dex":652,"en":"Chesnaught","speed":64,"abilities":["Overgrow","Overgrow","Bulletproof"]},{"dex":652,"en":"Chesnaught-Mega","speed":44,"abilities":["Bulletproof","Bulletproof","Bulletproof"]},{"dex":655,"en":"Delphox","speed":104,"abilities":["Blaze","Blaze","Magician"]},{"dex":655,"en":"Delphox-Mega","speed":134,"abilities":["Levitate","Levitate","Levitate"]},{"dex":658,"en":"Greninja","speed":122,"abilities":["Torrent","Torrent","Protean"]},{"dex":658,"en":"Greninja-Mega","speed":142,"abilities":["Protean","Protean","Protean"]},{"dex":660,"en":"Diggersby","speed":78,"abilities":["Pickup","Cheek Pouch","Huge Power"]},{"dex":663,"en":"Talonflame","speed":126,"abilities":["Flame Body","Flame Body","Gale Wings"]},{"dex":666,"en":"Vivillon","speed":89,"abilities":["Shield Dust","Compound Eyes","Friend Guard"]},{"dex":668,"en":"Pyroar","speed":106,"abilities":[""]},{"dex":668,"en":"Pyroar-Mega","speed":126,"abilities":[""]},{"dex":670,"en":"Floette-Eternal","speed":92,"abilities":["Flower Veil","Flower Veil","Symbiosis"]},{"dex":670,"en":"Floette-Mega","speed":102,"abilities":["Fairy Aura","Fairy Aura","Fairy Aura"]},{"dex":671,"en":"Florges","speed":75,"abilities":["Flower Veil","Flower Veil","Symbiosis"]},{"dex":675,"en":"Pangoro","speed":58,"abilities":["Iron Fist","Mold Breaker","Scrappy"]},{"dex":676,"en":"Furfrou","speed":102,"abilities":[""]},{"dex":678,"en":"Meowstic","speed":104,"abilities":["Keen Eye","Infiltrator","Prankster"]},{"dex":678,"en":"Meowstic-F","speed":104,"abilities":["Keen Eye","Infiltrator","Competitive"]},{"dex":678,"en":"Meowstic-M-Mega","speed":124,"abilities":["Trace","Trace","Trace"]},{"dex":678,"en":"Meowstic-F-Mega","speed":124,"abilities":["Trace","Trace","Trace"]},{"dex":681,"en":"Aegislash","speed":60,"abilities":["Stance Change","Stance Change","Stance Change"]},{"dex":683,"en":"Aromatisse","speed":29,"abilities":["Healer","Healer","Aroma Veil"]},{"dex":685,"en":"Slurpuff","speed":72,"abilities":["Sweet Veil","Sweet Veil","Unburden"]},{"dex":687,"en":"Malamar","speed":73,"abilities":["Contrary","Suction Cups","Infiltrator"]},{"dex":687,"en":"Malamar-Mega","speed":88,"abilities":["Contrary","Contrary","Contrary"]},{"dex":689,"en":"Barbaracle","speed":68,"abilities":["Tough Claws","Sniper","Pickpocket"]},{"dex":689,"en":"Barbaracle-Mega","speed":88,"abilities":["Tough Claws","Tough Claws","Tough Claws"]},{"dex":691,"en":"Dragalge","speed":44,"abilities":["Poison Point","Poison Touch","Adaptability"]},{"dex":691,"en":"Dragalge-Mega","speed":44,"abilities":["Regenerator","Regenerator","Regenerator"]},{"dex":693,"en":"Clawitzer","speed":59,"abilities":["Mega Launcher","Mega Launcher","Mega Launcher"]},{"dex":695,"en":"Heliolisk","speed":109,"abilities":[""]},{"dex":697,"en":"Tyrantrum","speed":71,"abilities":["Strong Jaw","Strong Jaw","Rock Head"]},{"dex":699,"en":"Aurorus","speed":58,"abilities":["Refrigerate","Refrigerate","Snow Warning"]},{"dex":700,"en":"Sylveon","speed":60,"abilities":["Cute Charm","Cute Charm","Pixilate"]},{"dex":701,"en":"Hawlucha","speed":118,"abilities":["Limber","Unburden","Mold Breaker"]},{"dex":701,"en":"Hawlucha-Mega","speed":118,"abilities":["No Guard","No Guard","No Guard"]},{"dex":702,"en":"Dedenne","speed":101,"abilities":["Cheek Pouch","Pickup","Plus"]},{"dex":706,"en":"Goodra","speed":80,"abilities":["Sap Sipper","Hydration","Gooey"]},{"dex":706,"en":"Goodra-Hisui","speed":60,"abilities":["Sap Sipper","Shell Armor","Gooey"]},{"dex":707,"en":"Klefki","speed":75,"abilities":["Prankster","Prankster","Magician"]},{"dex":709,"en":"Trevenant","speed":56,"abilities":["Natural Cure","Frisk","Harvest"]},{"dex":711,"en":"Gourgeist","speed":84,"abilities":["Pickup","Frisk","Insomnia"]},{"dex":711,"en":"Gourgeist-Small","speed":99,"abilities":["Pickup","Frisk","Insomnia"]},{"dex":711,"en":"Gourgeist-Large","speed":69,"abilities":["Pickup","Frisk","Insomnia"]},{"dex":711,"en":"Gourgeist-Jumbo","speed":54,"abilities":["Pickup","Frisk","Insomnia"]},{"dex":713,"en":"Avalugg","speed":28,"abilities":["Own Tempo","Ice Body","Sturdy"]},{"dex":713,"en":"Avalugg-Hisui","speed":38,"abilities":["Strong Jaw","Ice Body","Sturdy"]},{"dex":715,"en":"Noivern","speed":123,"abilities":["Frisk","Infiltrator","Telepathy"]},{"dex":724,"en":"Decidueye","speed":70,"abilities":["Overgrow","Overgrow","Long Reach"]},{"dex":724,"en":"Decidueye-Hisui","speed":60,"abilities":["Overgrow","Overgrow","Scrappy"]},{"dex":727,"en":"Incineroar","speed":60,"abilities":["Blaze","Blaze","Intimidate"]},{"dex":730,"en":"Primarina","speed":60,"abilities":["Torrent","Torrent","Liquid Voice"]},{"dex":733,"en":"Toucannon","speed":60,"abilities":["Keen Eye","Skill Link","Sheer Force"]},{"dex":740,"en":"Crabominable","speed":43,"abilities":["Hyper Cutter","Iron Fist","Anger Point"]},{"dex":740,"en":"Crabominable-Mega","speed":33,"abilities":["Iron Fist","Iron Fist","Iron Fist"]},{"dex":745,"en":"Lycanroc","speed":112,"abilities":["Keen Eye","Sand Rush","Steadfast"]},{"dex":745,"en":"Lycanroc-Midnight","speed":82,"abilities":["Keen Eye","Vital Spirit","No Guard"]},{"dex":745,"en":"Lycanroc-Dusk","speed":110,"abilities":["Tough Claws","Tough Claws","Tough Claws"]},{"dex":748,"en":"Toxapex","speed":35,"abilities":["Merciless","Limber","Regenerator"]},{"dex":750,"en":"Mudsdale","speed":35,"abilities":["Own Tempo","Stamina","Inner Focus"]},{"dex":752,"en":"Araquanid","speed":42,"abilities":["Water Bubble","Water Bubble","Water Absorb"]},{"dex":758,"en":"Salazzle","speed":117,"abilities":["Corrosion","Corrosion","Oblivious"]},{"dex":763,"en":"Tsareena","speed":72,"abilities":["Leaf Guard","Queenly Majesty","Sweet Veil"]},{"dex":765,"en":"Oranguru","speed":60,"abilities":["Inner Focus","Telepathy","Symbiosis"]},{"dex":766,"en":"Passimian","speed":80,"abilities":["Receiver","Receiver","Defiant"]},{"dex":778,"en":"Mimikyu","speed":96,"abilities":["Disguise","Disguise","Disguise"]},{"dex":780,"en":"Drampa","speed":36,"abilities":["Berserk","Sap Sipper","Cloud Nine"]},{"dex":780,"en":"Drampa-Mega","speed":36,"abilities":["Berserk","Berserk","Berserk"]},{"dex":784,"en":"Kommo-o","speed":85,"abilities":["Bulletproof","Soundproof","Overcoat"]},{"dex":823,"en":"Corviknight","speed":67,"abilities":["Pressure","Unnerve","Mirror Armor"]},{"dex":841,"en":"Flapple","speed":70,"abilities":["Ripen","Gluttony","Hustle"]},{"dex":842,"en":"Appletun","speed":30,"abilities":["Ripen","Gluttony","Thick Fat"]},{"dex":844,"en":"Sandaconda","speed":71,"abilities":["Sand Spit","Shed Skin","Sand Veil"]},{"dex":855,"en":"Polteageist","speed":70,"abilities":["Weak Armor","Weak Armor","Cursed Body"]},{"dex":858,"en":"Hatterene","speed":29,"abilities":["Healer","Anticipation","Magic Bounce"]},{"dex":861,"en":"Grimmsnarl","speed":60,"abilities":["Prankster","Frisk","Pickpocket"]},{"dex":866,"en":"Mr. Rime","speed":70,"abilities":["Tangled Feet","Screen Cleaner","Ice Body"]},{"dex":867,"en":"Runerigus","speed":30,"abilities":["Wandering Spirit","Wandering Spirit","Wandering Spirit"]},{"dex":869,"en":"Alcremie","speed":64,"abilities":["Sweet Veil","Sweet Veil","Aroma Veil"]},{"dex":870,"en":"Falinks","speed":75,"abilities":["Battle Armor","Battle Armor","Defiant"]},{"dex":870,"en":"Falinks-Mega","speed":100,"abilities":["Defiant","Defiant","Defiant"]},{"dex":877,"en":"Morpeko","speed":97,"abilities":["Hunger Switch","Hunger Switch","Hunger Switch"]},{"dex":887,"en":"Dragapult","speed":142,"abilities":["Clear Body","Infiltrator","Cursed Body"]},{"dex":899,"en":"Wyrdeer","speed":65,"abilities":["Intimidate","Frisk","Sap Sipper"]},{"dex":900,"en":"Kleavor","speed":85,"abilities":["Swarm","Sheer Force","Sharpness"]},{"dex":902,"en":"Basculegion","speed":78,"abilities":["Swift Swim","Adaptability","Mold Breaker"]},{"dex":903,"en":"Sneasler","speed":120,"abilities":["Pressure","Unburden","Poison Touch"]},{"dex":904,"en":"Overqwil","speed":85,"abilities":["Poison Point","Swift Swim","Intimidate"]},{"dex":908,"en":"Meowscarada","speed":123,"abilities":["Overgrow","Overgrow","Protean"]},{"dex":911,"en":"Skeledirge","speed":66,"abilities":["Blaze","Blaze","Unaware"]},{"dex":914,"en":"Quaquaval","speed":85,"abilities":["Torrent","Torrent","Moxie"]},{"dex":925,"en":"Maushold","speed":111,"abilities":[""]},{"dex":934,"en":"Garganacl","speed":35,"abilities":["Purifying Salt","Sturdy","Clear Body"]},{"dex":936,"en":"Armarouge","speed":75,"abilities":["Flash Fire","Flash Fire","Weak Armor"]},{"dex":937,"en":"Ceruledge","speed":85,"abilities":["Flash Fire","Flash Fire","Weak Armor"]},{"dex":939,"en":"Bellibolt","speed":45,"abilities":["Electromorphosis","Static","Damp"]},{"dex":952,"en":"Scovillain","speed":75,"abilities":["Chlorophyll","Insomnia","Moody"]},{"dex":952,"en":"Scovillain-Mega","speed":75,"abilities":["318","318","318"]},{"dex":956,"en":"Espathra","speed":105,"abilities":["Opportunist","Frisk","Speed Boost"]},{"dex":959,"en":"Tinkaton","speed":94,"abilities":["Mold Breaker","Own Tempo","Pickpocket"]},{"dex":964,"en":"Palafin","speed":100,"abilities":["Zero to Hero","Zero to Hero","Zero to Hero"]},{"dex":968,"en":"Orthworm","speed":65,"abilities":["Earth Eater","Earth Eater","Sand Veil"]},{"dex":970,"en":"Glimmora","speed":86,"abilities":["Toxic Debris","Toxic Debris","Corrosion"]},{"dex":970,"en":"Glimmora-Mega","speed":101,"abilities":["Adaptability","Adaptability","Adaptability"]},{"dex":972,"en":"Houndstone","speed":68,"abilities":["Sand Rush","Sand Rush","Fluffy"]},{"dex":979,"en":"Annihilape","speed":90,"abilities":["Vital Spirit","Inner Focus","Defiant"]},{"dex":981,"en":"Farigiraf","speed":60,"abilities":["Cud Chew","Armor Tail","Sap Sipper"]},{"dex":983,"en":"Kingambit","speed":50,"abilities":["Defiant","Supreme Overlord","Pressure"]},{"dex":1000,"en":"Gholdengo","speed":84,"abilities":["Good as Gold","Good as Gold","Good as Gold"]},{"dex":1013,"en":"Sinistcha","speed":70,"abilities":["Hospitality","Hospitality","Heatproof"]},{"dex":1018,"en":"Archaludon","speed":85,"abilities":["Stamina","Sturdy","Stalwart"]},{"dex":1019,"en":"Hydrapple","speed":44,"abilities":["Supersweet Syrup","Regenerator","Sticky Hold"]}];
+
+// Japanese base names are fetched from the lightweight "pokemon" name package.
+// English remains as a fallback if the CDN is unavailable.
+let jpNames = [];
+let selected = null;
+let nature = 1.1;
+let sp = 32;
+const enabledLines = new Set(["fast","neutral","zero"]);
+
+const speedAbilityMap = {
+  "Swift Swim":"swift",
+  "Chlorophyll":"chlorophyll",
+  "Sand Rush":"sandrush",
+  "Slush Rush":"slushrush",
+  "Surge Surfer":"surgesurfer",
+  "Unburden":"unburden",
+  "Quick Feet":"quickfeet"
+};
+const abilityJa = {
+  "Swift Swim":"すいすい","Chlorophyll":"ようりょくそ","Sand Rush":"すなかき",
+  "Slush Rush":"ゆきかき","Surge Surfer":"サーフテール","Unburden":"かるわざ",
+  "Quick Feet":"はやあし","Speed Boost":"かそく","Motor Drive":"モータードライブ",
+  "Weak Armor":"くだけるよろい","Gooey":"ぬめぬめ","Steadfast":"ふくつのこころ"
+};
+
+function baseJp(mon){
+  return jpNames[mon.dex-1] || mon.en.split("-")[0];
+}
+function displayName(mon){
+  const b = baseJp(mon);
+  const n = mon.en;
+  if (n.includes("-Mega X")) return "メガ"+b+"X";
+  if (n.includes("-Mega Y")) return "メガ"+b+"Y";
+  if (n.includes("-Mega")) {
+    if (n.includes("Meowstic-M-Mega")) return "メガ"+b+"♂";
+    if (n.includes("Meowstic-F-Mega")) return "メガ"+b+"♀";
+    return "メガ"+b;
+  }
+  if (n.endsWith("-Alola")) return b+"（アローラ）";
+  if (n.endsWith("-Galar")) return b+"（ガラル）";
+  if (n.endsWith("-Hisui")) return b+"（ヒスイ）";
+  if (n.includes("Tauros-Paldea Combat")) return b+"（パルデア・コンバット）";
+  if (n.includes("Tauros-Paldea Blaze")) return b+"（パルデア・ブレイズ）";
+  if (n.includes("Tauros-Paldea Aqua")) return b+"（パルデア・ウォーター）";
+  if (n==="Meowstic-F") return b+"♀";
+  if (n==="Meowstic") return b+"♂";
+  if (n==="Basculegion-F") return b+"♀";
+  if (n==="Basculegion") return b+"♂";
+  if (n.includes("Gourgeist-Small")) return b+"（ちいさい）";
+  if (n.includes("Gourgeist-Large")) return b+"（おおきい）";
+  if (n.includes("Gourgeist-Jumbo")) return b+"（とくだい）";
+  if (n==="Gourgeist") return b+"（ふつう）";
+  if (n.includes("Lycanroc-Midnight")) return b+"（まよなか）";
+  if (n.includes("Lycanroc-Dusk")) return b+"（たそがれ）";
+  if (n==="Lycanroc") return b+"（まひる）";
+  if (n.includes("Rotom-Heat")) return "ヒート"+b;
+  if (n.includes("Rotom-Wash")) return "ウォッシュ"+b;
+  if (n.includes("Rotom-Frost")) return "フロスト"+b;
+  if (n.includes("Rotom-Fan")) return "スピン"+b;
+  if (n.includes("Rotom-Mow")) return "カット"+b;
+  return b;
+}
+function padDex(n){return "#"+String(n).padStart(4,"0")}
+
+function rawSpeedFor(mon, pts=sp, nat=nature){
+  const neutral = mon.speed + 20 + Number(pts);
+  return Math.floor(neutral * Number(nat));
+}
+function rankMul(r){
+  r=Number(r);
+  if(r>=0) return (2+r)/2;
+  return 2/(2-r);
+}
+function currentModifiers(){
+  const ability = document.getElementById("abilityMod").value;
+  let abilityMul = ability==="quickfeet" ? 1.5 :
+    ["swift","chlorophyll","sandrush","slushrush","surgesurfer","unburden"].includes(ability) ? 2 : 1;
+  return {
+    rank:Number(document.getElementById("rank").value),
+    item:Number(document.getElementById("item").value),
+    ability, abilityMul,
+    tailwind:document.getElementById("tailwind").checked,
+    paralysis:document.getElementById("paralysis").checked,
+    swamp:document.getElementById("swamp").checked,
+    trickroom:document.getElementById("trickroom").checked
+  };
+}
+function effectiveFromRaw(raw, mods=currentModifiers()){
+  // Sequential integer truncation matches the practical in-game comparisons used by common calculators.
+  let s = Math.floor(raw * rankMul(mods.rank));
+  s = Math.floor(s * mods.item);
+  s = Math.floor(s * mods.abilityMul);
+  if(mods.tailwind) s = Math.floor(s * 2);
+  // Quick Feet removes the usual paralysis Speed penalty while active.
+  if(mods.paralysis && mods.ability!=="quickfeet") s = Math.floor(s * 0.5);
+  if(mods.swamp) s = Math.floor(s * 0.25);
+  return s;
+}
+function effectiveFor(mon, pts=sp, nat=nature, mods=currentModifiers()){
+  return effectiveFromRaw(rawSpeedFor(mon,pts,nat),mods);
+}
+
+function lineSpeed(mon,key){
+  if(key==="fast") return {speed:rawSpeedFor(mon,32,1.1), label:"最速"};
+  if(key==="neutral") return {speed:rawSpeedFor(mon,32,1), label:"準速"};
+  if(key==="zero") return {speed:rawSpeedFor(mon,0,1), label:"無振り"};
+  if(key==="slow") return {speed:rawSpeedFor(mon,0,.9), label:"最遅"};
+  if(key==="plus1") return {speed:Math.floor(rawSpeedFor(mon,32,1.1)*1.5), label:"+1最速"};
+  if(key==="scarf") return {speed:Math.floor(rawSpeedFor(mon,32,1.1)*1.5), label:"スカーフ最速"};
+  if(key==="double") return {speed:rawSpeedFor(mon,32,1.1)*2, label:"2倍最速"};
+}
+function buildLines(){
+  const out=[];
+  for(const mon of MONS){
+    for(const key of enabledLines){
+      const l=lineSpeed(mon,key);
+      out.push({mon,key,label:l.label,speed:l.speed});
+    }
+  }
+  return out;
+}
+
+function resultStatus(targetSpeed){
+  const mine=effectiveFor(selected);
+  const tr=currentModifiers().trickroom;
+  if(mine===targetSpeed) return "tie";
+  if(!tr) return mine>targetSpeed ? "good":"bad";
+  return mine<targetSpeed ? "good":"bad";
+}
+
+function renderList(){
+  const mine=effectiveFor(selected);
+  const lines=buildLines();
+  const groups=new Map();
+  for(const x of lines){
+    if(!groups.has(x.speed)) groups.set(x.speed,[]);
+    groups.get(x.speed).push(x);
+  }
+  if(!groups.has(mine)) groups.set(mine,[]);
+  const speeds=[...groups.keys()].sort((a,b)=>b-a);
+  const idx=speeds.indexOf(mine);
+  const from=Math.max(0,idx-8), to=Math.min(speeds.length,idx+9);
+  const visible=speeds.slice(from,to);
+  document.getElementById("lineCount").textContent=`${lines.length.toLocaleString()}ラインから周辺表示`;
+
+  let html="";
+  for(const s of visible){
+    const isMine=s===mine;
+    const arr=groups.get(s) || [];
+    html += `<div class="speedRow ${isMine?'meRow':''}">
+      <div class="speedNum ${isMine?'me':''}">${s}</div>
+      <div>${isMine?'<div class="meLabel">← あなた（現在）</div>':''}<div class="targets">`;
+    const show=arr.slice(0,8);
+    for(const x of show){
+      const st=resultStatus(x.speed);
+      html += `<button class="target ${st==='good'?'good':st==='tie'?'tie':''}"
+        data-dex="${x.mon.dex}" data-en="${encodeURIComponent(x.mon.en)}"
+        data-speed="${x.speed}" data-label="${x.label}">
+        ${displayName(x.mon)}<br><small>${x.label}</small>
+      </button>`;
+    }
+    if(arr.length>8) html += `<span class="sub" style="padding:6px">ほか${arr.length-8}件</span>`;
+    html += `</div></div></div>`;
+  }
+  document.getElementById("speedList").innerHTML=html || '<div class="empty">表示できるラインがありません</div>';
+
+  document.querySelectorAll(".target").forEach(btn=>{
+    btn.addEventListener("click",()=>openTarget(btn));
+  });
+}
+
+function findRequiredSP(targetSpeed){
+  const tr=currentModifiers().trickroom;
+  if(!tr){
+    for(let p=0;p<=32;p++){
+      if(effectiveFor(selected,p,nature)>targetSpeed) return p;
+    }
+    return null;
+  }else{
+    // Under Trick Room, find the largest SP that still moves before the target.
+    let ok=null;
+    for(let p=0;p<=32;p++){
+      if(effectiveFor(selected,p,nature)<targetSpeed) ok=p;
+    }
+    return ok;
+  }
+}
+function openTarget(btn){
+  const dex=Number(btn.dataset.dex);
+  const en=decodeURIComponent(btn.dataset.en);
+  const target=MONS.find(m=>m.dex===dex && m.en===en);
+  const targetSpeed=Number(btn.dataset.speed);
+  const label=btn.dataset.label;
+  const mine=effectiveFor(selected);
+  const tr=currentModifiers().trickroom;
+  const req=findRequiredSP(targetSpeed);
+  const status=resultStatus(targetSpeed);
+
+  document.getElementById("sheetTitle").textContent=displayName(target)+" "+label;
+  document.getElementById("sheetSub").textContent=`相手の比較S：${targetSpeed}`;
+  document.getElementById("sheetBig").textContent=
+    status==="good" ? (tr?"現在すでにトリル下で先制":"現在すでに抜いています") :
+    status==="tie" ? "現在は同速" :
+    (tr?"現在はトリル下で後攻":"現在は相手が速い");
+
+  let explain="";
+  if(req===null){
+    explain=`今の性格・補正条件では、Sポイント0〜32の範囲で${tr?"相手より遅く":"相手より速く"}できません。`;
+  }else if(tr){
+    explain=`今の性格・補正なら、Sポイント <b>${req}</b> 以下で相手より遅くなり、トリックルーム下で先に動けます。`;
+  }else{
+    const delta=req-sp;
+    explain=`今の性格・補正なら、相手を確実に抜く最低ラインは <b>Sポイント ${req}</b> です。`;
+    if(delta>0) explain+=` 現在から <b>あと${delta}</b>。`;
+    if(delta<0) explain+=` 現在より <b>${-delta}ポイント落としても</b>抜けます。`;
+    if(delta===0) explain+=` 現在がちょうど最低ラインです。`;
+  }
+  document.getElementById("sheetExplain").innerHTML=explain;
+
+  const setBtn=document.getElementById("sheetSet");
+  if(req!==null && req!==sp){
+    setBtn.style.display="block";
+    setBtn.textContent=`Sポイントを ${req} に設定`;
+    setBtn.onclick=()=>{setSP(req); closeSheet();};
+  }else setBtn.style.display="none";
+  document.getElementById("sheetBack").style.display="block";
+}
+function closeSheet(){document.getElementById("sheetBack").style.display="none"}
+
+function updateAbilityHint(){
+  const relevant=selected.abilities.filter(a=>speedAbilityMap[a] || ["Speed Boost","Motor Drive","Weak Armor","Gooey","Steadfast"].includes(a));
+  const el=document.getElementById("abilityHint");
+  if(relevant.length){
+    el.innerHTML="このポケモンのS関連特性候補：<b>"+relevant.map(a=>abilityJa[a]||a).join(" / ")+"</b>";
+  }else{
+    el.textContent="全特性を任意に選択できます（検証用）。";
+  }
+}
+function update(){
+  if(!selected) return;
+  document.getElementById("monName").textContent=displayName(selected);
+  document.getElementById("monMeta").textContent=`${padDex(selected.dex)} / ${selected.en}`;
+  document.getElementById("baseSpeed").textContent=selected.speed;
+  document.getElementById("spNum").textContent=sp;
+  document.getElementById("spRange").value=sp;
+  document.getElementById("rawSpeed").textContent=rawSpeedFor(selected);
+  document.getElementById("effSpeed").textContent=effectiveFor(selected);
+  updateAbilityHint();
+  renderList();
+  saveState();
+}
+function setSP(n){sp=Math.max(0,Math.min(32,Number(n)));update()}
+function selectMon(mon){
+  selected=mon;
+  document.getElementById("pokeSearch").value="";
+  document.getElementById("results").style.display="none";
+  update();
+}
+function saveState(){
+  try{
+    localStorage.setItem("pcs_v02",JSON.stringify({
+      en:selected?.en,nature,sp,
+      rank:document.getElementById("rank").value,
+      item:document.getElementById("item").value,
+      abilityMod:document.getElementById("abilityMod").value,
+      tailwind:document.getElementById("tailwind").checked,
+      paralysis:document.getElementById("paralysis").checked,
+      swamp:document.getElementById("swamp").checked,
+      trickroom:document.getElementById("trickroom").checked,
+      lines:[...enabledLines]
+    }));
+  }catch(e){}
+}
+function loadState(){
+  try{
+    const x=JSON.parse(localStorage.getItem("pcs_v02")||"null");
+    if(!x) return false;
+    selected=MONS.find(m=>m.en===x.en)||MONS.find(m=>m.en==="Garchomp");
+    nature=Number(x.nature??1.1); sp=Number(x.sp??32);
+    document.getElementById("rank").value=x.rank??"0";
+    document.getElementById("item").value=x.item??"1";
+    document.getElementById("abilityMod").value=x.abilityMod??"none";
+    document.getElementById("tailwind").checked=!!x.tailwind;
+    document.getElementById("paralysis").checked=!!x.paralysis;
+    document.getElementById("swamp").checked=!!x.swamp;
+    document.getElementById("trickroom").checked=!!x.trickroom;
+    enabledLines.clear(); (x.lines||["fast","neutral","zero"]).forEach(v=>enabledLines.add(v));
+    return true;
+  }catch(e){return false}
+}
+
+function renderSearch(q=""){
+  q=q.trim().toLowerCase();
+  const items=MONS.filter(m=>{
+    const jp=displayName(m);
+    return !q || m.en.toLowerCase().includes(q) || jp.includes(q) || String(m.dex).includes(q);
+  }).slice(0,40);
+  const r=document.getElementById("results");
+  r.innerHTML=items.map(m=>`<div class="result" data-en="${encodeURIComponent(m.en)}">
+    <span><b>${displayName(m)}</b><br><small>${m.en}</small></span>
+    <small>${padDex(m.dex)}　S${m.speed}</small>
+  </div>`).join("");
+  r.style.display=items.length?"block":"none";
+  r.querySelectorAll(".result").forEach(el=>{
+    el.addEventListener("click",()=>{
+      const mon=MONS.find(m=>m.en===decodeURIComponent(el.dataset.en));
+      selectMon(mon);
+    });
+  });
+}
+
+async function initNames(){
+  try{
+    const res=await fetch("https://cdn.jsdelivr.net/npm/pokemon@latest/data/ja.json",{cache:"force-cache"});
+    if(res.ok) jpNames=await res.json();
+  }catch(e){}
+  update();
+}
+
+const rank=document.getElementById("rank");
+
+document.getElementById("pokeSearch").addEventListener("focus",e=>renderSearch(e.target.value));
+document.getElementById("pokeSearch").addEventListener("input",e=>renderSearch(e.target.value));
+document.addEventListener("click",e=>{
+  if(!e.target.closest(".searchWrap")) document.getElementById("results").style.display="none";
+});
+document.getElementById("spRange").addEventListener("input",e=>setSP(e.target.value));
+document.getElementById("minus").onclick=()=>setSP(sp-1);
+document.getElementById("plus").onclick=()=>setSP(sp+1);
+document.querySelectorAll("[data-sp]").forEach(b=>b.onclick=()=>setSP(b.dataset.sp));
+
+document.querySelectorAll("#natureSeg button").forEach(b=>{
+  b.onclick=()=>{
+    nature=Number(b.dataset.nature);
+    document.querySelectorAll("#natureSeg button").forEach(x=>x.classList.toggle("active",x===b));
+    update();
+  }
+});
+["rank","item","abilityMod","tailwind","paralysis","swamp","trickroom"].forEach(id=>{
+  document.getElementById(id).addEventListener("change",update);
+});
+document.querySelectorAll("#lineFilters .chip").forEach(b=>{
+  b.onclick=()=>{
+    const k=b.dataset.line;
+    if(enabledLines.has(k)) enabledLines.delete(k); else enabledLines.add(k);
+    b.classList.toggle("active",enabledLines.has(k));
+    update();
+  }
+});
+document.getElementById("sheetClose").onclick=closeSheet;
+document.getElementById("sheetBack").addEventListener("click",e=>{if(e.target.id==="sheetBack")closeSheet()});
+
+loadState();
+if(!selected) selected=MONS.find(m=>m.en==="Garchomp")||MONS[0];
+document.querySelectorAll("#natureSeg button").forEach(b=>b.classList.toggle("active",Number(b.dataset.nature)===nature));
+document.querySelectorAll("#lineFilters .chip").forEach(b=>b.classList.toggle("active",enabledLines.has(b.dataset.line)));
+update();
+initNames();
+</script>
+</body>
+</html>
