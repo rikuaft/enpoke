@@ -119,6 +119,11 @@
   .secondaryBtn:active{transform:scale(.99)}
   .resetBtn{border:0;background:transparent;color:var(--accent);font-size:12px;font-weight:750;padding:2px 3px}
   .stickySummary{position:sticky;top:8px;z-index:14;display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(23,32,51,.94);color:#fff;border-radius:15px;padding:9px 11px;margin:0 4px 12px;box-shadow:0 8px 22px rgba(15,23,42,.18);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  /* ホーム画面から起動したWebアプリではDynamic Island/ステータスバーを避ける */
+  @media (display-mode: standalone){
+    .stickySummary{top:calc(env(safe-area-inset-top, 0px) + 10px)}
+  }
+  body.iosStandalone .stickySummary{top:calc(env(safe-area-inset-top, 0px) + 10px)}
   .stickySummary .ssName{font-size:12px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .stickySummary .ssStats{display:flex;align-items:baseline;gap:7px;white-space:nowrap}
   .stickySummary .ssStats b{font-size:18px}
@@ -133,6 +138,11 @@
 </style>
 </head>
 <body>
+<script>
+  if (window.navigator.standalone === true) {
+    document.body.classList.add("iosStandalone");
+  }
+</script>
 
 <noscript>
   <div style="max-width:620px;margin:18px auto;padding:14px 16px;border-radius:14px;background:#fff7ed;color:#9a3412;font-family:-apple-system,BlinkMacSystemFont,sans-serif;line-height:1.55">
@@ -144,7 +154,7 @@
 <div class="app">
   <div class="top">
     <div class="title">Pokémon Champions S調整</div>
-    <div class="badge">prototype v0.5</div>
+    <div class="badge">prototype v0.6</div>
   </div>
 
   <section class="card">
@@ -288,7 +298,7 @@
       <summary>計算・データについて</summary>
       <p>Lv.50相当のChampionsルールとして、S実数値は「S種族値 + 20 + 能力ポイント」を基準に性格補正を掛け、小数点以下を切り捨てます。Pokémon ShowdownのChampions実装とも同じ計算です。</p>
       <p>現在のポケモン種族値・特性データを内蔵し、やっくんの表そのものをコピーせず、同種の素早さラインをアプリ内で自動生成しています。純粋に見た目だけが違い、Sと特性が同じフォルムは検索欄でまとめています。</p>
-      <p>このv0.5では「実効S」に直接関係する主要補正を実装しています。優先度・せんせいのツメ等の確率行動順・特性による強制後攻などは、生の素早さ比較とは別ロジックになるため次版で切り分けます。</p>
+      <p>このv0.6では「実効S」に直接関係する主要補正を実装しています。優先度・せんせいのツメ等の確率行動順・特性による強制後攻などは、生の素早さ比較とは別ロジックになるため次版で切り分けます。</p>
     </details>
   </section>
 
@@ -589,7 +599,7 @@ function selectMon(mon){
 }
 function saveState(){
   try{
-    localStorage.setItem("pcs_v05",JSON.stringify({
+    localStorage.setItem("pcs_v06",JSON.stringify({
       en:selected?.en,nature,sp,
       rank:document.getElementById("rank").value,
       item:document.getElementById("item").value,
@@ -604,7 +614,7 @@ function saveState(){
 }
 function loadState(){
   try{
-    const x=JSON.parse(localStorage.getItem("pcs_v05")||"null");
+    const x=JSON.parse(localStorage.getItem("pcs_v06")||"null");
     if(!x) return false;
     selected=MONS.find(m=>m.en===x.en)||MONS.find(m=>m.en==="Garchomp");
     nature=Number(x.nature??1.1); sp=Number(x.sp??32);
