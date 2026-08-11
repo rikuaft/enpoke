@@ -89,6 +89,23 @@
   .lineHeader{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
   .filters{display:flex;gap:6px;overflow:auto;padding-bottom:4px;margin-bottom:7px}
   .chip.active{background:var(--accent);border-color:var(--accent);color:white}
+  .pinnedWrap{display:none;margin:2px 0 14px}
+  .pinnedWrap.show{display:block}
+  .pinnedHead{display:flex;align-items:center;justify-content:space-between;margin:0 2px 7px}
+  .pinnedHead b{font-size:13px}
+  .pinnedHead span{font-size:10px;color:var(--muted)}
+  .pinnedGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .pinnedTarget{position:relative;border:1px solid var(--line);background:#f8fafc;border-radius:13px;padding:10px 11px;text-align:left;color:var(--ink);min-width:0}
+  .pinnedTarget.good{background:#ecfdf3;border-color:#bbf7d0}
+  .pinnedTarget.tie{background:#fff7ed;border-color:#fed7aa}
+  .pinnedTarget.bad{background:#f8fafc}
+  .pinnedName{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:22px}
+  .pinnedMeta{font-size:10px;color:var(--muted);margin-top:3px}
+  .pinnedState{font-size:11px;font-weight:800;margin-top:6px}
+  .pinnedTarget.good .pinnedState{color:var(--good)}
+  .pinnedTarget.tie .pinnedState{color:var(--warn)}
+  .pinnedTarget.bad .pinnedState{color:var(--bad)}
+  .pinStar{position:absolute;right:8px;top:7px;font-size:15px;color:#f59e0b}
   .speedList{border-top:1px solid var(--line)}
   .speedRow{display:grid;grid-template-columns:52px 1fr;gap:7px;padding:9px 0;border-bottom:1px solid #f1f5f9}
   .speedNum{font-size:18px;font-weight:850;text-align:right;padding-top:4px}
@@ -161,7 +178,7 @@
 <div class="app">
   <div class="top">
     <div class="title">Pokémon Champions S調整</div>
-    <div class="badge">prototype v0.7</div>
+    <div class="badge">prototype v0.8</div>
   </div>
 
   <section class="card">
@@ -289,6 +306,10 @@
       <h2 style="margin:0">どこまで抜ける？</h2>
       <span class="sub" id="lineCount"></span>
     </div>
+    <div class="pinnedWrap" id="pinnedWrap">
+      <div class="pinnedHead"><b>★ よく見る相手</b><span id="pinnedCount"></span></div>
+      <div class="pinnedGrid" id="pinnedGrid"></div>
+    </div>
     <div class="filters" id="lineFilters">
       <button class="chip active" data-line="fast">最速</button>
       <button class="chip active" data-line="neutral">準速</button>
@@ -309,7 +330,7 @@
       <summary>計算・データについて</summary>
       <p>Lv.50相当のChampionsルールとして、S実数値は「S種族値 + 20 + 能力ポイント」を基準に性格補正を掛け、小数点以下を切り捨てます。Pokémon ShowdownのChampions実装とも同じ計算です。</p>
       <p>現在のポケモン種族値・特性データを内蔵し、やっくんの表そのものをコピーせず、同種の素早さラインをアプリ内で自動生成しています。純粋に見た目だけが違い、Sと特性が同じフォルムは検索欄でまとめています。</p>
-      <p>このv0.7では「実効S」に直接関係する主要補正を実装しています。優先度・せんせいのツメ等の確率行動順・特性による強制後攻などは、生の素早さ比較とは別ロジックになるため次版で切り分けます。</p>
+      <p>このv0.8では「実効S」に直接関係する主要補正を実装しています。優先度・せんせいのツメ等の確率行動順・特性による強制後攻などは、生の素早さ比較とは別ロジックになるため次版で切り分けます。</p>
     </details>
   </section>
 
@@ -325,6 +346,7 @@
     <div class="sub" id="sheetSub"></div>
     <div class="big" id="sheetBig"></div>
     <div id="sheetExplain" style="font-size:13px;line-height:1.65"></div>
+    <button class="sheetClose" id="sheetPin" style="margin-top:10px;display:none">☆ よく見る相手に固定</button>
     <button class="sheetAction" id="sheetSet" style="display:none"></button>
     <button class="sheetClose" id="sheetClose">閉じる</button>
   </div>
@@ -341,6 +363,8 @@ let nature = 1.1;
 let sp = 32;
 const enabledLines = new Set(["fast","neutral","zero","two"]);
 const expandedSpeeds = new Set();
+let pinnedTargets = [];
+let currentSheetTarget = null;
 
 const speedAbilityMap = {
   "Swift Swim":"swift",
@@ -464,6 +488,89 @@ function resultStatus(targetSpeed){
   return mine<targetSpeed ? "good":"bad";
 }
 
+
+function pinId(en,key){
+  return `${en}::${key}`;
+}
+function isPinned(en,key){
+  return pinnedTargets.some(x=>x.id===pinId(en,key));
+}
+function togglePinned(target){
+  if(!target) return;
+  const id=pinId(target.en,target.key);
+  const idx=pinnedTargets.findIndex(x=>x.id===id);
+  if(idx>=0){
+    pinnedTargets.splice(idx,1);
+    showToast("固定から外しました");
+  }else{
+    pinnedTargets.push({id,en:target.en,key:target.key});
+    showToast("よく見る相手に固定しました");
+  }
+  renderPinnedTargets();
+  updatePinButton();
+  saveState();
+}
+function pinnedStateText(speed){
+  const st=resultStatus(speed);
+  const tr=currentModifiers().trickroom;
+  if(st==="tie") return "同速";
+  if(st==="good") return tr ? "トリル下で先制" : "今は抜いてる";
+  return tr ? "トリル下で後攻" : "相手が速い";
+}
+function renderPinnedTargets(){
+  const wrap=document.getElementById("pinnedWrap");
+  const grid=document.getElementById("pinnedGrid");
+  const count=document.getElementById("pinnedCount");
+  if(!wrap || !grid) return;
+
+  const valid=[];
+  for(const p of pinnedTargets){
+    const mon=MONS.find(m=>m.en===p.en);
+    if(!mon) continue;
+    const line=lineSpeed(mon,p.key);
+    if(!line) continue;
+    valid.push({p,mon,line});
+  }
+  if(valid.length!==pinnedTargets.length){
+    pinnedTargets=valid.map(x=>x.p);
+  }
+
+  wrap.classList.toggle("show",valid.length>0);
+  count.textContent=valid.length ? `${valid.length}件` : "";
+  grid.innerHTML=valid.map(({p,mon,line})=>{
+    const st=resultStatus(line.speed);
+    return `<button class="pinnedTarget ${st}" data-pinid="${p.id}">
+      <span class="pinStar">★</span>
+      <div class="pinnedName">${displayName(mon)}</div>
+      <div class="pinnedMeta">${line.label} ・ S${line.speed}</div>
+      <div class="pinnedState">${pinnedStateText(line.speed)}</div>
+    </button>`;
+  }).join("");
+
+  grid.querySelectorAll(".pinnedTarget").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const p=pinnedTargets.find(x=>x.id===btn.dataset.pinid);
+      const mon=p && MONS.find(m=>m.en===p.en);
+      if(!p || !mon) return;
+      const line=lineSpeed(mon,p.key);
+      openTargetData({
+        dex:mon.dex,en:mon.en,key:p.key,label:line.label,speed:line.speed
+      });
+    });
+  });
+}
+function updatePinButton(){
+  const btn=document.getElementById("sheetPin");
+  if(!btn) return;
+  if(!currentSheetTarget){
+    btn.style.display="none";
+    return;
+  }
+  btn.style.display="block";
+  const fixed=isPinned(currentSheetTarget.en,currentSheetTarget.key);
+  btn.textContent=fixed ? "★ 固定済み（タップで外す）" : "☆ よく見る相手に固定";
+}
+
 function renderList(){
   const mine=effectiveFor(selected);
   const lines=buildLines();
@@ -494,7 +601,7 @@ function renderList(){
       const st=resultStatus(x.speed);
       html += `<button class="target ${st==='good'?'good':st==='tie'?'tie':''}"
         data-dex="${x.mon.dex}" data-en="${encodeURIComponent(x.mon.en)}"
-        data-speed="${x.speed}" data-label="${x.label}">
+        data-speed="${x.speed}" data-label="${x.label}" data-key="${x.key}">
         ${displayName(x.mon)}<br><small>${x.label}</small>
       </button>`;
     }
@@ -534,11 +641,26 @@ function findRequiredSP(targetSpeed){
   }
 }
 function openTarget(btn){
-  const dex=Number(btn.dataset.dex);
-  const en=decodeURIComponent(btn.dataset.en);
-  const target=MONS.find(m=>m.dex===dex && m.en===en);
-  const targetSpeed=Number(btn.dataset.speed);
-  const label=btn.dataset.label;
+  openTargetData({
+    dex:Number(btn.dataset.dex),
+    en:decodeURIComponent(btn.dataset.en),
+    key:btn.dataset.key,
+    speed:Number(btn.dataset.speed),
+    label:btn.dataset.label
+  });
+}
+function openTargetData(data){
+  const target=MONS.find(m=>m.dex===Number(data.dex) && m.en===data.en);
+  if(!target) return;
+
+  // 固定相手から開いた場合も、現在のデータからSを再計算
+  const line=data.key ? lineSpeed(target,data.key) : null;
+  const targetSpeed=line ? line.speed : Number(data.speed);
+  const label=line ? line.label : data.label;
+  const key=data.key || "";
+
+  currentSheetTarget={dex:target.dex,en:target.en,key,label,speed:targetSpeed};
+
   const mine=effectiveFor(selected);
   const tr=currentModifiers().trickroom;
   const req=findRequiredSP(targetSpeed);
@@ -565,15 +687,18 @@ function openTarget(btn){
   }
   document.getElementById("sheetExplain").innerHTML=explain;
 
+  updatePinButton();
+
   const setBtn=document.getElementById("sheetSet");
   if(req!==null && req!==sp){
     setBtn.style.display="block";
     setBtn.textContent=`Sポイントを ${req} に設定`;
     setBtn.onclick=()=>{setSP(req); closeSheet();};
   }else setBtn.style.display="none";
+
   document.getElementById("sheetBack").style.display="block";
 }
-function closeSheet(){document.getElementById("sheetBack").style.display="none"}
+function closeSheet(){document.getElementById("sheetBack").style.display="none";currentSheetTarget=null;}
 
 function updateAbilityHint(){
   const relevant=selected.abilities.filter(a=>speedAbilityMap[a] || ["Speed Boost","Motor Drive","Weak Armor","Gooey","Steadfast"].includes(a));
@@ -672,6 +797,7 @@ function update(){
   document.getElementById("ssEff").textContent=effectiveFor(selected);
   updateAbilityHint();
   renderAdjustmentAdvice();
+  renderPinnedTargets();
   renderList();
   saveState();
 }
@@ -684,7 +810,7 @@ function selectMon(mon){
 }
 function saveState(){
   try{
-    localStorage.setItem("pcs_v07",JSON.stringify({
+    localStorage.setItem("pcs_v08",JSON.stringify({
       en:selected?.en,nature,sp,
       rank:document.getElementById("rank").value,
       item:document.getElementById("item").value,
@@ -693,13 +819,14 @@ function saveState(){
       paralysis:document.getElementById("paralysis").checked,
       swamp:document.getElementById("swamp").checked,
       trickroom:document.getElementById("trickroom").checked,
-      lines:[...enabledLines]
+      lines:[...enabledLines],
+      pinned:pinnedTargets
     }));
   }catch(e){}
 }
 function loadState(){
   try{
-    const x=JSON.parse(localStorage.getItem("pcs_v07")||"null");
+    const x=JSON.parse(localStorage.getItem("pcs_v08")||localStorage.getItem("pcs_v07")||"null");
     if(!x) return false;
     selected=MONS.find(m=>m.en===x.en)||MONS.find(m=>m.en==="Garchomp");
     nature=Number(x.nature??1.1); sp=Number(x.sp??32);
@@ -711,6 +838,7 @@ function loadState(){
     document.getElementById("swamp").checked=!!x.swamp;
     document.getElementById("trickroom").checked=!!x.trickroom;
     enabledLines.clear(); (x.lines||["fast","neutral","zero","two"]).forEach(v=>enabledLines.add(v));
+    pinnedTargets=Array.isArray(x.pinned)?x.pinned:[];
     return true;
   }catch(e){return false}
 }
@@ -862,6 +990,7 @@ document.getElementById("copyConfig").onclick=copyConfigURL;
 document.getElementById("resetBattle").onclick=resetBattle;
 document.getElementById("basicLines").onclick=()=>{enabledLines.clear();["fast","neutral","zero"].forEach(x=>enabledLines.add(x));document.querySelectorAll("#lineFilters .chip").forEach(b=>b.classList.toggle("active",enabledLines.has(b.dataset.line)));update();};
 document.getElementById("allLinesOff").onclick=()=>{enabledLines.clear();document.querySelectorAll("#lineFilters .chip").forEach(b=>b.classList.remove("active"));update();};
+document.getElementById("sheetPin").onclick=()=>togglePinned(currentSheetTarget);
 document.getElementById("sheetClose").onclick=closeSheet;
 document.getElementById("sheetBack").addEventListener("click",e=>{if(e.target.id==="sheetBack")closeSheet()});
 
