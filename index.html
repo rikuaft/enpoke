@@ -66,6 +66,13 @@
   .stat b{display:block;font-size:30px;margin-top:2px}
   .stat.primary{background:var(--accent2)}
   .stat.primary b{color:var(--accent)}
+  .adviceBox{margin-top:10px;display:grid;gap:7px}
+  .adviceItem{display:none;border:1px solid var(--line);background:#fafafa;border-radius:12px;padding:10px 12px;font-size:12px;line-height:1.55;color:#4b5563}
+  .adviceItem.show{display:block}
+  .adviceItem.good{background:#ecfdf3;border-color:#bbf7d0;color:#087f5b}
+  .adviceItem.info{background:#eef2ff;border-color:#c7d2fe;color:#4338ca}
+  .adviceItem.warn{background:#fff7ed;border-color:#fed7aa;color:#b45309}
+  .adviceItem b{font-weight:850}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
   label.small{display:block;font-size:11px;color:var(--muted);margin:0 0 5px 3px}
   select{
@@ -154,13 +161,13 @@
 <div class="app">
   <div class="top">
     <div class="title">Pokémon Champions S調整</div>
-    <div class="badge">prototype v0.6</div>
+    <div class="badge">prototype v0.7</div>
   </div>
 
   <section class="card">
     <h2>ポケモン</h2>
     <div class="searchWrap">
-      <input id="pokeSearch" type="search" placeholder="ポケモン名で検索" autocomplete="off">
+      <input id="pokeSearch" type="search" placeholder="ポケモン名で検索（ひらがなOK）" autocomplete="off">
       <div class="results" id="results"></div>
     </div>
     <div class="monHead">
@@ -213,6 +220,10 @@
         <span>バトル中の実効S</span>
         <b id="effSpeed">169</b>
       </div>
+    </div>
+    <div class="adviceBox">
+      <div class="adviceItem" id="wasteAdvice"></div>
+      <div class="adviceItem" id="nextAdvice"></div>
     </div>
   </section>
 
@@ -298,7 +309,7 @@
       <summary>計算・データについて</summary>
       <p>Lv.50相当のChampionsルールとして、S実数値は「S種族値 + 20 + 能力ポイント」を基準に性格補正を掛け、小数点以下を切り捨てます。Pokémon ShowdownのChampions実装とも同じ計算です。</p>
       <p>現在のポケモン種族値・特性データを内蔵し、やっくんの表そのものをコピーせず、同種の素早さラインをアプリ内で自動生成しています。純粋に見た目だけが違い、Sと特性が同じフォルムは検索欄でまとめています。</p>
-      <p>このv0.6では「実効S」に直接関係する主要補正を実装しています。優先度・せんせいのツメ等の確率行動順・特性による強制後攻などは、生の素早さ比較とは別ロジックになるため次版で切り分けます。</p>
+      <p>このv0.7では「実効S」に直接関係する主要補正を実装しています。優先度・せんせいのツメ等の確率行動順・特性による強制後攻などは、生の素早さ比較とは別ロジックになるため次版で切り分けます。</p>
     </details>
   </section>
 
@@ -573,6 +584,79 @@ function updateAbilityHint(){
     el.textContent="全特性を任意に選択できます（検証用）。";
   }
 }
+function renderAdjustmentAdvice(){
+  const wasteEl=document.getElementById("wasteAdvice");
+  const nextEl=document.getElementById("nextAdvice");
+  if(!wasteEl || !nextEl || !selected) return;
+
+  const mine=effectiveFor(selected);
+
+  // 現在の実効Sを維持したまま下げられるポイントがあるか
+  let minSame=sp;
+  for(let p=sp-1;p>=0;p--){
+    if(effectiveFor(selected,p,nature)===mine) minSame=p;
+    else break;
+  }
+  if(minSame<sp){
+    const saved=sp-minSame;
+    wasteEl.className="adviceItem show good";
+    wasteEl.innerHTML=`💡 <b>${minSame}振りでも実効S ${mine}</b>。${saved}ポイント削れます。`;
+  }else{
+    wasteEl.className="adviceItem";
+    wasteEl.innerHTML="";
+  }
+
+  // トリックルーム時は「次の速いライン」が直感と逆になるので表示しない
+  if(currentModifiers().trickroom || enabledLines.size===0){
+    nextEl.className="adviceItem";
+    nextEl.innerHTML="";
+    return;
+  }
+
+  const lines=buildLines();
+  const faster=[...new Set(lines.map(x=>x.speed).filter(s=>s>mine))].sort((a,b)=>a-b);
+
+  if(!faster.length){
+    nextEl.className="adviceItem show info";
+    nextEl.innerHTML="🏁 現在の比較条件では、これより上のSラインはありません。";
+    return;
+  }
+
+  let chosen=null;
+  for(const target of faster){
+    let req=null;
+    for(let p=sp;p<=32;p++){
+      if(effectiveFor(selected,p,nature)>target){
+        req=p;
+        break;
+      }
+    }
+    if(req!==null){
+      const examples=lines
+        .filter(x=>x.speed===target)
+        .slice(0,2)
+        .map(x=>`${displayName(x.mon)} ${x.label}`)
+        .join(" / ");
+      chosen={target,req,examples};
+      break;
+    }
+  }
+
+  if(chosen){
+    nextEl.className="adviceItem show info";
+    nextEl.innerHTML=`🎯 次の有効ライン：<b>S${chosen.target}</b>${chosen.examples?`（${chosen.examples}）`:""}<br><b>あと${chosen.req-sp}ポイント</b>で確実に抜けます。`;
+  }else{
+    const target=faster[0];
+    const examples=lines
+      .filter(x=>x.speed===target)
+      .slice(0,2)
+      .map(x=>`${displayName(x.mon)} ${x.label}`)
+      .join(" / ");
+    nextEl.className="adviceItem show warn";
+    nextEl.innerHTML=`🎯 次のラインは <b>S${target}</b>${examples?`（${examples}）`:""}。今の性格・補正では32振りでも確実には抜けません。`;
+  }
+}
+
 function update(){
   if(!selected) return;
   document.getElementById("monName").textContent=displayName(selected);
@@ -587,6 +671,7 @@ function update(){
   document.getElementById("ssSp").textContent=sp;
   document.getElementById("ssEff").textContent=effectiveFor(selected);
   updateAbilityHint();
+  renderAdjustmentAdvice();
   renderList();
   saveState();
 }
@@ -599,7 +684,7 @@ function selectMon(mon){
 }
 function saveState(){
   try{
-    localStorage.setItem("pcs_v06",JSON.stringify({
+    localStorage.setItem("pcs_v07",JSON.stringify({
       en:selected?.en,nature,sp,
       rank:document.getElementById("rank").value,
       item:document.getElementById("item").value,
@@ -614,7 +699,7 @@ function saveState(){
 }
 function loadState(){
   try{
-    const x=JSON.parse(localStorage.getItem("pcs_v06")||"null");
+    const x=JSON.parse(localStorage.getItem("pcs_v07")||"null");
     if(!x) return false;
     selected=MONS.find(m=>m.en===x.en)||MONS.find(m=>m.en==="Garchomp");
     nature=Number(x.nature??1.1); sp=Number(x.sp??32);
@@ -630,18 +715,34 @@ function loadState(){
   }catch(e){return false}
 }
 
+function hiraToKata(str){
+  return String(str).replace(/[\u3041-\u3096]/g, ch =>
+    String.fromCharCode(ch.charCodeAt(0) + 0x60)
+  );
+}
+function normalizeSearch(str){
+  return hiraToKata(String(str))
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/\s+/g,"");
+}
+
 function renderSearch(q=""){
-  q=q.trim().toLowerCase();
+  const rawQ=String(q).trim();
+  const nq=normalizeSearch(rawQ);
   const items=MONS.map(m=>{
     const jp=displayName(m);
-    const en=m.en.toLowerCase();
-    const jpLower=jp.toLowerCase();
+    const en=m.en;
+    const njp=normalizeSearch(jp);
+    const nen=normalizeSearch(en);
     let score=99;
-    if(!q) score=10;
-    else if(jpLower===q || en===q || String(m.dex)===q) score=0;
-    else if(jpLower.startsWith(q) || en.startsWith(q)) score=1;
-    else if(jpLower.includes(q) || en.includes(q)) score=2;
-    else if(String(m.dex).includes(q)) score=3;
+    if(!nq) score=10;
+    else if(njp===nq || nen===nq || String(m.dex)===rawQ) score=0;
+    else if(njp.startsWith(nq)) score=1;
+    else if(nen.startsWith(nq)) score=2;
+    else if(njp.includes(nq)) score=3;
+    else if(nen.includes(nq)) score=4;
+    else if(String(m.dex).includes(rawQ)) score=5;
     return {m,score};
   }).filter(x=>x.score<99).sort((a,b)=>a.score-b.score || a.m.dex-b.m.dex).slice(0,40).map(x=>x.m);
   const r=document.getElementById("results");
