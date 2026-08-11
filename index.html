@@ -178,7 +178,7 @@
 <div class="app">
   <div class="top">
     <div class="title">Pokémon Champions S調整</div>
-    <div class="badge">prototype v0.8</div>
+    <div class="badge">prototype v0.9</div>
   </div>
 
   <section class="card">
@@ -318,6 +318,7 @@
       <button class="chip" data-line="slow">最遅</button>
       <button class="chip" data-line="plus1">+1最速</button>
       <button class="chip" data-line="scarf">スカーフ最速</button>
+      <button class="chip" data-line="scarfNeutral">スカーフ準速</button>
       <button class="chip" data-line="double">2倍最速</button>
     </div>
     <div class="filterTools"><button id="basicLines">基本3種に戻す</button><button id="allLinesOff">比較ラインを全解除</button></div>
@@ -330,7 +331,7 @@
       <summary>計算・データについて</summary>
       <p>Lv.50相当のChampionsルールとして、S実数値は「S種族値 + 20 + 能力ポイント」を基準に性格補正を掛け、小数点以下を切り捨てます。Pokémon ShowdownのChampions実装とも同じ計算です。</p>
       <p>現在のポケモン種族値・特性データを内蔵し、やっくんの表そのものをコピーせず、同種の素早さラインをアプリ内で自動生成しています。純粋に見た目だけが違い、Sと特性が同じフォルムは検索欄でまとめています。</p>
-      <p>このv0.8では「実効S」に直接関係する主要補正を実装しています。優先度・せんせいのツメ等の確率行動順・特性による強制後攻などは、生の素早さ比較とは別ロジックになるため次版で切り分けます。</p>
+      <p>このv0.9では「実効S」に直接関係する主要補正を実装しています。優先度・せんせいのツメ等の確率行動順・特性による強制後攻などは、生の素早さ比較とは別ロジックになるため次版で切り分けます。</p>
     </details>
   </section>
 
@@ -467,6 +468,7 @@ function lineSpeed(mon,key){
   if(key==="slow") return {speed:rawSpeedFor(mon,0,.9), label:"最遅"};
   if(key==="plus1") return {speed:Math.floor(rawSpeedFor(mon,32,1.1)*1.5), label:"+1最速"};
   if(key==="scarf") return {speed:Math.floor(rawSpeedFor(mon,32,1.1)*1.5), label:"スカーフ最速"};
+  if(key==="scarfNeutral") return {speed:Math.floor(rawSpeedFor(mon,32,1)*1.5), label:"スカーフ準速"};
   if(key==="double") return {speed:rawSpeedFor(mon,32,1.1)*2, label:"2倍最速"};
 }
 function buildLines(){
@@ -810,7 +812,7 @@ function selectMon(mon){
 }
 function saveState(){
   try{
-    localStorage.setItem("pcs_v08",JSON.stringify({
+    localStorage.setItem("pcs_v09",JSON.stringify({
       en:selected?.en,nature,sp,
       rank:document.getElementById("rank").value,
       item:document.getElementById("item").value,
@@ -826,7 +828,7 @@ function saveState(){
 }
 function loadState(){
   try{
-    const x=JSON.parse(localStorage.getItem("pcs_v08")||localStorage.getItem("pcs_v07")||"null");
+    const x=JSON.parse(localStorage.getItem("pcs_v09")||localStorage.getItem("pcs_v08")||localStorage.getItem("pcs_v07")||"null");
     if(!x) return false;
     selected=MONS.find(m=>m.en===x.en)||MONS.find(m=>m.en==="Garchomp");
     nature=Number(x.nature??1.1); sp=Number(x.sp??32);
