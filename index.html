@@ -111,6 +111,24 @@
   details{font-size:12px;color:var(--muted)}
   summary{cursor:pointer;font-weight:700;color:#4b5563}
   .foot{font-size:10px;color:#94a3b8;line-height:1.55;padding:2px 5px 10px;text-align:center}
+
+  .spInputWrap{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}
+  .spInput{width:58px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 7px;text-align:center;font-weight:800;color:var(--ink)}
+  .shareRow{display:flex;gap:8px;margin-top:12px}
+  .secondaryBtn{flex:1;border:1px solid var(--line);background:#fff;border-radius:12px;padding:9px 10px;font-size:12px;font-weight:750;color:#374151}
+  .secondaryBtn:active{transform:scale(.99)}
+  .resetBtn{border:0;background:transparent;color:var(--accent);font-size:12px;font-weight:750;padding:2px 3px}
+  .stickySummary{position:sticky;top:8px;z-index:14;display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(23,32,51,.94);color:#fff;border-radius:15px;padding:9px 11px;margin:0 4px 12px;box-shadow:0 8px 22px rgba(15,23,42,.18);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  .stickySummary .ssName{font-size:12px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .stickySummary .ssStats{display:flex;align-items:baseline;gap:7px;white-space:nowrap}
+  .stickySummary .ssStats b{font-size:18px}
+  .stickySummary .ssStats small{font-size:10px;color:#cbd5e1}
+  .speedDelta{display:block;font-size:10px;color:var(--muted);font-weight:700;margin-top:1px}
+  .moreBtn{border:1px dashed #cbd5e1;background:#fff;color:#64748b;border-radius:9px;padding:6px 8px;font-size:11px;font-weight:750}
+  .filterTools{display:flex;gap:6px;margin-top:5px;margin-bottom:8px}
+  .filterTools button{border:0;background:#f3f4f6;color:#4b5563;border-radius:9px;padding:6px 9px;font-size:11px;font-weight:700}
+  .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 20px);z-index:100;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:#111827;color:#fff;border-radius:999px;padding:9px 13px;font-size:12px;font-weight:700;transition:.2s;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
   @media (max-width:370px){.stat b{font-size:26px}.grid2{grid-template-columns:1fr}.toggles{grid-template-columns:1fr}}
 </style>
 </head>
@@ -126,7 +144,7 @@
 <div class="app">
   <div class="top">
     <div class="title">Pokémon Champions S調整</div>
-    <div class="badge">prototype v0.2</div>
+    <div class="badge">prototype v0.3</div>
   </div>
 
   <section class="card">
@@ -142,6 +160,7 @@
       </div>
       <div class="baseS"><span class="sub">S種族値</span><br><b id="baseSpeed">102</b></div>
     </div>
+    <div class="shareRow"><button class="secondaryBtn" id="shareConfig">↗ この調整を共有</button><button class="secondaryBtn" id="copyConfig">リンクをコピー</button></div>
   </section>
 
   <section class="card">
@@ -160,7 +179,7 @@
         <div class="sub">S 能力ポイント</div>
         <div class="spValue"><span id="spNum">32</span><small> / 32</small></div>
       </div>
-      <div class="sub">1ポイント刻み</div>
+      <div class="spInputWrap">直接入力 <input id="spInput" class="spInput" type="number" min="0" max="32" step="1" inputmode="numeric" value="32"></div>
     </div>
     <input id="spRange" type="range" min="0" max="32" step="1" value="32">
     <div class="stepper">
@@ -189,7 +208,7 @@
   </section>
 
   <section class="card">
-    <h2>バトル中の補正</h2>
+    <div class="lineHeader"><h2 style="margin:0">バトル中の補正</h2><button class="resetBtn" id="resetBattle">補正をリセット</button></div>
     <div class="grid2">
       <div>
         <label class="small">能力ランク</label>
@@ -240,6 +259,11 @@
     <div class="hint">「かそく」「くだけるよろい」「モータードライブ」「がんせきふうじ」など、Sランクが変わる効果は上の能力ランクでまとめて再現できます。トリックルームは速度そのものではなく行動順判定を反転します。</div>
   </section>
 
+  <div class="stickySummary" id="stickySummary">
+    <div class="ssName" id="ssName">ガブリアス</div>
+    <div class="ssStats"><small>Sポイント <span id="ssSp">32</span></small><b>S<span id="ssEff">169</span></b></div>
+  </div>
+
   <section class="card">
     <div class="lineHeader">
       <h2 style="margin:0">どこまで抜ける？</h2>
@@ -254,6 +278,7 @@
       <button class="chip" data-line="scarf">スカーフ最速</button>
       <button class="chip" data-line="double">2倍最速</button>
     </div>
+    <div class="filterTools"><button id="basicLines">基本3種に戻す</button><button id="allLinesOff">比較ラインを全解除</button></div>
     <div class="hint">自分の現在地の前後を表示。相手をタップすると「何ポイントまで振れば抜けるか」を逆算します。同速は「抜いた」扱いにしません。</div>
     <div id="speedList" class="speedList"><div class="empty">JavaScriptが動作すると、ここに素早さ一覧が表示されます。</div></div>
   </section>
@@ -261,14 +286,16 @@
   <section class="card">
     <details>
       <summary>計算・データについて</summary>
-      <p>Lv.50固定。チャンピオンズの能力ポイントは0〜32。S実数値は「S種族値 + 20 + 能力ポイント」を基準に能力補正を掛け、小数点以下を切り捨てます。</p>
+      <p>Lv.50相当のChampionsルールとして、S実数値は「S種族値 + 20 + 能力ポイント」を基準に性格補正を掛け、小数点以下を切り捨てます。Pokémon ShowdownのChampions実装とも同じ計算です。</p>
       <p>現在のポケモン種族値・特性データを内蔵し、やっくんの表そのものをコピーせず、同種の素早さラインをアプリ内で自動生成しています。純粋に見た目だけが違い、Sと特性が同じフォルムは検索欄でまとめています。</p>
-      <p>このv0.2では「実効S」に直接関係する主要補正を実装しています。優先度・せんせいのツメ等の確率行動順・特性による強制後攻などは、生の素早さ比較とは別ロジックになるため次版で切り分けます。</p>
+      <p>このv0.3では「実効S」に直接関係する主要補正を実装しています。優先度・せんせいのツメ等の確率行動順・特性による強制後攻などは、生の素早さ比較とは別ロジックになるため次版で切り分けます。</p>
     </details>
   </section>
 
   <div class="foot">非公式・個人用プロトタイプ。ポケモン画像は使用していません。</div>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <div class="sheetBack" id="sheetBack">
   <div class="sheet">
@@ -292,6 +319,7 @@ let selected = null;
 let nature = 1.1;
 let sp = 32;
 const enabledLines = new Set(["fast","neutral","zero"]);
+const expandedSpeeds = new Set();
 
 const speedAbilityMap = {
   "Swift Swim":"swift",
@@ -427,16 +455,19 @@ function renderList(){
   const idx=speeds.indexOf(mine);
   const from=Math.max(0,idx-8), to=Math.min(speeds.length,idx+9);
   const visible=speeds.slice(from,to);
-  document.getElementById("lineCount").textContent=`${lines.length.toLocaleString()}ラインから周辺表示`;
+  document.getElementById("lineCount").textContent=lines.length?`${lines.length.toLocaleString()}ラインから周辺表示`:"比較ラインなし";
 
   let html="";
   for(const s of visible){
     const isMine=s===mine;
     const arr=groups.get(s) || [];
+    const delta=s-mine;
+    const dlabel=delta===0?'同速':(delta>0?`+${delta}`:`${delta}`);
     html += `<div class="speedRow ${isMine?'meRow':''}">
-      <div class="speedNum ${isMine?'me':''}">${s}</div>
+      <div class="speedNum ${isMine?'me':''}">${s}<span class="speedDelta">${dlabel}</span></div>
       <div>${isMine?'<div class="meLabel">← あなた（現在）</div>':''}<div class="targets">`;
-    const show=arr.slice(0,8);
+    const expanded=expandedSpeeds.has(s);
+    const show=expanded ? arr : arr.slice(0,8);
     for(const x of show){
       const st=resultStatus(x.speed);
       html += `<button class="target ${st==='good'?'good':st==='tie'?'tie':''}"
@@ -445,13 +476,22 @@ function renderList(){
         ${displayName(x.mon)}<br><small>${x.label}</small>
       </button>`;
     }
-    if(arr.length>8) html += `<span class="sub" style="padding:6px">ほか${arr.length-8}件</span>`;
+    if(arr.length>8){
+      html += `<button class="moreBtn" data-speedrow="${s}">${expanded?'折りたたむ':`ほか${arr.length-8}件を表示`}</button>`;
+    }
     html += `</div></div></div>`;
   }
-  document.getElementById("speedList").innerHTML=html || '<div class="empty">表示できるラインがありません</div>';
+  document.getElementById("speedList").innerHTML=html || '<div class="empty">比較ラインを選択してください</div>';
 
   document.querySelectorAll(".target").forEach(btn=>{
     btn.addEventListener("click",()=>openTarget(btn));
+  });
+  document.querySelectorAll(".moreBtn").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const s=Number(btn.dataset.speedrow);
+      if(expandedSpeeds.has(s)) expandedSpeeds.delete(s); else expandedSpeeds.add(s);
+      renderList();
+    });
   });
 }
 
@@ -529,8 +569,12 @@ function update(){
   document.getElementById("baseSpeed").textContent=selected.speed;
   document.getElementById("spNum").textContent=sp;
   document.getElementById("spRange").value=sp;
+  document.getElementById("spInput").value=sp;
   document.getElementById("rawSpeed").textContent=rawSpeedFor(selected);
   document.getElementById("effSpeed").textContent=effectiveFor(selected);
+  document.getElementById("ssName").textContent=displayName(selected);
+  document.getElementById("ssSp").textContent=sp;
+  document.getElementById("ssEff").textContent=effectiveFor(selected);
   updateAbilityHint();
   renderList();
   saveState();
@@ -544,7 +588,7 @@ function selectMon(mon){
 }
 function saveState(){
   try{
-    localStorage.setItem("pcs_v02",JSON.stringify({
+    localStorage.setItem("pcs_v03",JSON.stringify({
       en:selected?.en,nature,sp,
       rank:document.getElementById("rank").value,
       item:document.getElementById("item").value,
@@ -559,7 +603,7 @@ function saveState(){
 }
 function loadState(){
   try{
-    const x=JSON.parse(localStorage.getItem("pcs_v02")||"null");
+    const x=JSON.parse(localStorage.getItem("pcs_v03")||"null");
     if(!x) return false;
     selected=MONS.find(m=>m.en===x.en)||MONS.find(m=>m.en==="Garchomp");
     nature=Number(x.nature??1.1); sp=Number(x.sp??32);
@@ -577,10 +621,18 @@ function loadState(){
 
 function renderSearch(q=""){
   q=q.trim().toLowerCase();
-  const items=MONS.filter(m=>{
+  const items=MONS.map(m=>{
     const jp=displayName(m);
-    return !q || m.en.toLowerCase().includes(q) || jp.includes(q) || String(m.dex).includes(q);
-  }).slice(0,40);
+    const en=m.en.toLowerCase();
+    const jpLower=jp.toLowerCase();
+    let score=99;
+    if(!q) score=10;
+    else if(jpLower===q || en===q || String(m.dex)===q) score=0;
+    else if(jpLower.startsWith(q) || en.startsWith(q)) score=1;
+    else if(jpLower.includes(q) || en.includes(q)) score=2;
+    else if(String(m.dex).includes(q)) score=3;
+    return {m,score};
+  }).filter(x=>x.score<99).sort((a,b)=>a.score-b.score || a.m.dex-b.m.dex).slice(0,40).map(x=>x.m);
   const r=document.getElementById("results");
   r.innerHTML=items.map(m=>`<div class="result" data-en="${encodeURIComponent(m.en)}">
     <span><b>${displayName(m)}</b><br><small>${m.en}</small></span>
@@ -593,6 +645,65 @@ function renderSearch(q=""){
       selectMon(mon);
     });
   });
+}
+
+function showToast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("show");
+  clearTimeout(showToast._timer); showToast._timer=setTimeout(()=>t.classList.remove("show"),1800);
+}
+function configURL(){
+  const m=currentModifiers();
+  const u=new URL(location.href);
+  u.search="";
+  u.searchParams.set("mon",selected.en);
+  u.searchParams.set("sp",sp);
+  u.searchParams.set("nat",nature);
+  if(m.rank)u.searchParams.set("rank",m.rank);
+  if(m.item!==1)u.searchParams.set("item",m.item);
+  if(m.ability!=="none")u.searchParams.set("ab",m.ability);
+  if(m.tailwind)u.searchParams.set("tw","1");
+  if(m.paralysis)u.searchParams.set("para","1");
+  if(m.swamp)u.searchParams.set("swamp","1");
+  if(m.trickroom)u.searchParams.set("tr","1");
+  u.searchParams.set("lines",enabledLines.size?[...enabledLines].join(","):"none");
+  return u.toString();
+}
+async function copyConfigURL(){
+  const url=configURL();
+  try{await navigator.clipboard.writeText(url);showToast("調整リンクをコピーしました");}
+  catch(e){prompt("このリンクをコピーしてください",url);}
+}
+async function shareConfigURL(){
+  const url=configURL();
+  if(navigator.share){
+    try{await navigator.share({title:`${displayName(selected)} S調整`,text:`${displayName(selected)} / S${effectiveFor(selected)} / ${sp}pt`,url});return;}catch(e){if(e?.name==='AbortError')return;}
+  }
+  await copyConfigURL();
+}
+function loadURLState(){
+  const q=new URLSearchParams(location.search);
+  if(!q.has("mon")) return false;
+  const mon=MONS.find(m=>m.en===q.get("mon"));
+  if(mon) selected=mon;
+  if(q.has("sp")) sp=Math.max(0,Math.min(32,Number(q.get("sp"))));
+  if(q.has("nat")) nature=Number(q.get("nat"));
+  if(q.has("rank")) document.getElementById("rank").value=q.get("rank");
+  if(q.has("item")) document.getElementById("item").value=q.get("item");
+  if(q.has("ab")) document.getElementById("abilityMod").value=q.get("ab");
+  document.getElementById("tailwind").checked=q.get("tw")==="1";
+  document.getElementById("paralysis").checked=q.get("para")==="1";
+  document.getElementById("swamp").checked=q.get("swamp")==="1";
+  document.getElementById("trickroom").checked=q.get("tr")==="1";
+  if(q.has("lines")){enabledLines.clear();if(q.get("lines")!=="none")q.get("lines").split(",").filter(Boolean).forEach(x=>enabledLines.add(x));}
+  return true;
+}
+function resetBattle(){
+  document.getElementById("rank").value="0";
+  document.getElementById("item").value="1";
+  document.getElementById("abilityMod").value="none";
+  ["tailwind","paralysis","swamp","trickroom"].forEach(id=>document.getElementById(id).checked=false);
+  update(); showToast("バトル補正をリセットしました");
 }
 
 async function initNames(){
@@ -611,6 +722,7 @@ document.addEventListener("click",e=>{
   if(!e.target.closest(".searchWrap")) document.getElementById("results").style.display="none";
 });
 document.getElementById("spRange").addEventListener("input",e=>setSP(e.target.value));
+document.getElementById("spInput").addEventListener("change",e=>setSP(e.target.value));
 document.getElementById("minus").onclick=()=>setSP(sp-1);
 document.getElementById("plus").onclick=()=>setSP(sp+1);
 document.querySelectorAll("[data-sp]").forEach(b=>b.onclick=()=>setSP(b.dataset.sp));
@@ -633,10 +745,15 @@ document.querySelectorAll("#lineFilters .chip").forEach(b=>{
     update();
   }
 });
+document.getElementById("shareConfig").onclick=shareConfigURL;
+document.getElementById("copyConfig").onclick=copyConfigURL;
+document.getElementById("resetBattle").onclick=resetBattle;
+document.getElementById("basicLines").onclick=()=>{enabledLines.clear();["fast","neutral","zero"].forEach(x=>enabledLines.add(x));document.querySelectorAll("#lineFilters .chip").forEach(b=>b.classList.toggle("active",enabledLines.has(b.dataset.line)));update();};
+document.getElementById("allLinesOff").onclick=()=>{enabledLines.clear();document.querySelectorAll("#lineFilters .chip").forEach(b=>b.classList.remove("active"));update();};
 document.getElementById("sheetClose").onclick=closeSheet;
 document.getElementById("sheetBack").addEventListener("click",e=>{if(e.target.id==="sheetBack")closeSheet()});
 
-loadState();
+if(!loadURLState()) loadState();
 if(!selected) selected=MONS.find(m=>m.en==="Garchomp")||MONS[0];
 document.querySelectorAll("#natureSeg button").forEach(b=>b.classList.toggle("active",Number(b.dataset.nature)===nature));
 document.querySelectorAll("#lineFilters .chip").forEach(b=>b.classList.toggle("active",enabledLines.has(b.dataset.line)));
