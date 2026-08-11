@@ -144,7 +144,7 @@
 <div class="app">
   <div class="top">
     <div class="title">Pokémon Champions S調整</div>
-    <div class="badge">prototype v0.3</div>
+    <div class="badge">prototype v0.5</div>
   </div>
 
   <section class="card">
@@ -190,8 +190,7 @@
     <div class="quick">
       <button data-sp="0">0振り</button>
       <button data-sp="1">1</button>
-      <button data-sp="16">16</button>
-      <button data-sp="24">24</button>
+      <button data-sp="2">2</button>
       <button data-sp="32">32振り</button>
     </div>
 
@@ -273,6 +272,7 @@
       <button class="chip active" data-line="fast">最速</button>
       <button class="chip active" data-line="neutral">準速</button>
       <button class="chip active" data-line="zero">無振り</button>
+      <button class="chip active" data-line="two">2振り</button>
       <button class="chip" data-line="slow">最遅</button>
       <button class="chip" data-line="plus1">+1最速</button>
       <button class="chip" data-line="scarf">スカーフ最速</button>
@@ -288,7 +288,7 @@
       <summary>計算・データについて</summary>
       <p>Lv.50相当のChampionsルールとして、S実数値は「S種族値 + 20 + 能力ポイント」を基準に性格補正を掛け、小数点以下を切り捨てます。Pokémon ShowdownのChampions実装とも同じ計算です。</p>
       <p>現在のポケモン種族値・特性データを内蔵し、やっくんの表そのものをコピーせず、同種の素早さラインをアプリ内で自動生成しています。純粋に見た目だけが違い、Sと特性が同じフォルムは検索欄でまとめています。</p>
-      <p>このv0.3では「実効S」に直接関係する主要補正を実装しています。優先度・せんせいのツメ等の確率行動順・特性による強制後攻などは、生の素早さ比較とは別ロジックになるため次版で切り分けます。</p>
+      <p>このv0.5では「実効S」に直接関係する主要補正を実装しています。優先度・せんせいのツメ等の確率行動順・特性による強制後攻などは、生の素早さ比較とは別ロジックになるため次版で切り分けます。</p>
     </details>
   </section>
 
@@ -318,7 +318,7 @@ let jpNames = [];
 let selected = null;
 let nature = 1.1;
 let sp = 32;
-const enabledLines = new Set(["fast","neutral","zero"]);
+const enabledLines = new Set(["fast","neutral","zero","two"]);
 const expandedSpeeds = new Set();
 
 const speedAbilityMap = {
@@ -418,6 +418,7 @@ function lineSpeed(mon,key){
   if(key==="fast") return {speed:rawSpeedFor(mon,32,1.1), label:"最速"};
   if(key==="neutral") return {speed:rawSpeedFor(mon,32,1), label:"準速"};
   if(key==="zero") return {speed:rawSpeedFor(mon,0,1), label:"無振り"};
+  if(key==="two") return {speed:rawSpeedFor(mon,2,1), label:"2振り"};
   if(key==="slow") return {speed:rawSpeedFor(mon,0,.9), label:"最遅"};
   if(key==="plus1") return {speed:Math.floor(rawSpeedFor(mon,32,1.1)*1.5), label:"+1最速"};
   if(key==="scarf") return {speed:Math.floor(rawSpeedFor(mon,32,1.1)*1.5), label:"スカーフ最速"};
@@ -588,7 +589,7 @@ function selectMon(mon){
 }
 function saveState(){
   try{
-    localStorage.setItem("pcs_v03",JSON.stringify({
+    localStorage.setItem("pcs_v05",JSON.stringify({
       en:selected?.en,nature,sp,
       rank:document.getElementById("rank").value,
       item:document.getElementById("item").value,
@@ -603,7 +604,7 @@ function saveState(){
 }
 function loadState(){
   try{
-    const x=JSON.parse(localStorage.getItem("pcs_v03")||"null");
+    const x=JSON.parse(localStorage.getItem("pcs_v05")||"null");
     if(!x) return false;
     selected=MONS.find(m=>m.en===x.en)||MONS.find(m=>m.en==="Garchomp");
     nature=Number(x.nature??1.1); sp=Number(x.sp??32);
@@ -614,7 +615,7 @@ function loadState(){
     document.getElementById("paralysis").checked=!!x.paralysis;
     document.getElementById("swamp").checked=!!x.swamp;
     document.getElementById("trickroom").checked=!!x.trickroom;
-    enabledLines.clear(); (x.lines||["fast","neutral","zero"]).forEach(v=>enabledLines.add(v));
+    enabledLines.clear(); (x.lines||["fast","neutral","zero","two"]).forEach(v=>enabledLines.add(v));
     return true;
   }catch(e){return false}
 }
